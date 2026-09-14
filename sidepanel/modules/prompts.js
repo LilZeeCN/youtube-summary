@@ -12,6 +12,9 @@ const SUMMARY_JSON_SCHEMA = `{
   "extras": { "title": "指定的补充区块标题", "items": ["补充内容"] },
   "selfTest": [
     { "timestamp": "mm:ss", "question": "检验理解的问题", "answer": "来自视频的简短答案" }
+  ],
+  "connections": [
+    { "videoId": "用户记忆中给出的视频ID，原样照抄", "videoTitle": "该视频原标题", "relation": "印证 | 对比 | 延伸 | 矛盾", "text": "一句话说明两个视频在这个观点上如何相似或不同" }
   ]
 }`;
 
@@ -23,11 +26,17 @@ const CHAPTER_LENGTH_RULES = `章节摘要的长度与章节时长匹配：约 5
 
 const SELF_TEST_RULES = `selfTest 出 3~5 个检验理解的问题：只依据视频内容即可回答，考查对原理、方法或结论的理解，不出纯记忆细节的题；answer 用一两句话作答且必须来自视频；timestamp 指向答案在视频中的位置。视频内容太单薄时可减少题数。`;
 
-export function summarySystemPrompt(videoType = "general", extraSpec = {}) {
+const MEMORY_RULES = `若提供了【用户记忆】，请把它当作这位观众的既有认知来用：
+(a) 校准深度——用户已了解的基础概念少讲甚至不讲，把篇幅让给增量信息和更深的解释；
+(b) 在 connections 中写跨视频关联——只允许引用记忆里真实给出的视频（videoId 原样照抄，不得改写或编造），relation 用“印证/对比/延伸/矛盾”，text 必须落到具体观点上，说明两个视频在这个观点上如何一致、相反或递进；
+(c) 没有实质关联时输出空数组，禁止为了凑数硬找关联；不要在 keyPoints 或 thesis 里复述记忆内容。`;
+
+export function summarySystemPrompt(videoType = "general", extraSpec = {}, hasMemory = false) {
   const extraTitle = extraSpec.title || "值得记住";
   const extraGuidance = extraSpec.guidance || "补充主干总结之外最值得保留的信息，避免重复。";
   const thesisHint = extraSpec.thesisHint ? `\n10. ${extraSpec.thesisHint}` : "";
   const pointHint = extraSpec.pointHint || "覆盖视频主干";
+  const memoryRules = hasMemory ? `\n11. ${MEMORY_RULES}` : "";
   return `你是一位专业的视频内容分析师。用户会给你一份带时间戳的视频字幕，请用简体中文输出可以被程序读取的结构化总结。
 
 要求：
@@ -40,7 +49,7 @@ ${SUMMARY_JSON_SCHEMA}
 6. 提炼观点与结论，不要逐句复述字幕。${CONCRETENESS_RULES}
 7. 如果提供了视频描述，其中常含 UP主自己写的章节时间表与专有名词规范写法：划分章节时优先参考官方章节，术语写法优先采用描述中的规范名称。
 8. 当前预判的视频类型是 ${videoType}。如字幕明确显示类型不同，可修正 videoType；但 extras.title 必须写“${extraTitle}”，内容要求：${extraGuidance}
-9. keyPoints 保留 5~8 条，${pointHint}；chapters 按内容演进划分 3~8 章。${CHAPTER_LENGTH_RULES}内容不足时宁可减少数量，也不要凑数。${SELF_TEST_RULES}${thesisHint}`;
+9. keyPoints 保留 5~8 条，${pointHint}；chapters 按内容演进划分 3~8 章。${CHAPTER_LENGTH_RULES}内容不足时宁可减少数量，也不要凑数。${SELF_TEST_RULES}${thesisHint}${memoryRules}`;
 }
 
 // 描述是免费的准确率来源，但要防两点：太长（截断）和与字幕冲突（以字幕为准）
@@ -54,10 +63,10 @@ export function formatDescriptionBlock(description, maxChars = 1200) {
   return `【视频描述（可能含章节时间表与专有名词的规范写法；与字幕冲突时以字幕为准）】\n${clipped}`;
 }
 
-export function summaryUserPrompt(subtitleText, videoTitle, durationSec, description, videoType = "general") {
+export function summaryUserPrompt(subtitleText, videoTitle, durationSec, description, videoType = "general", memoryBlock = "") {
   const dur = durationSec ? `，时长约 ${Math.round(durationSec / 60)} 分钟` : "";
   const desc = formatDescriptionBlock(description);
-  return `视频标题：《${videoTitle}》${dur}\n预判内容类型：${videoType}\n\n${desc ? `${desc}\n\n` : ""}字幕如下：\n\n${subtitleText}`;
+  return `视频标题：《${videoTitle}》${dur}\n预判内容类型：${videoType}\n\n${desc ? `${desc}\n\n` : ""}${memoryBlock ? `${memoryBlock}\n\n` : ""}字幕如下：\n\n${subtitleText}`;
 }
 
 // —— 长视频分段总结（map-reduce） ——
@@ -97,10 +106,11 @@ ${terminologyGuide || "无"}
 ${subtitleText}`;
 }
 
-export function reduceSystemPrompt(videoType = "general", extraSpec = {}) {
+export function reduceSystemPrompt(videoType = "general", extraSpec = {}, hasMemory = false) {
   const extraTitle = extraSpec.title || "值得记住";
   const extraGuidance = extraSpec.guidance || "补充主干总结之外最值得保留的信息，避免重复。";
   const thesisHint = extraSpec.thesisHint ? `\n${extraSpec.thesisHint}` : "";
+  const memoryRules = hasMemory ? `\n${MEMORY_RULES}` : "";
   return `你是一位专业的视频内容分析师。用户提供了一个长视频各段落的要点摘录（含时间戳）。请把它们整合成一份完整的视频总结，用简体中文。
 
 只输出一个合法 JSON 对象，不要 Markdown 代码块或任何解释。结构必须严格符合：
@@ -109,16 +119,16 @@ ${SUMMARY_JSON_SCHEMA}
 时间戳必须来自所提供的摘录，绝不编造。章节按内容逻辑合并或拆分，时长可由相邻章节时间戳估算；${CHAPTER_LENGTH_RULES}${CONCRETENESS_RULES}
 汇总前先检查各部分是否存在同一术语的不同拼写或语义矛盾；严格按照规范术语表统一术语，并根据视频标题和上下文消解明显冲突。不确定时使用审慎表述，不要自行补充事实。
 预判视频类型是 ${videoType}；如内容证据明确可修正。extras.title 必须写“${extraTitle}”，内容要求：${extraGuidance}${thesisHint}
-${SELF_TEST_RULES}`;
+${SELF_TEST_RULES}${memoryRules}`;
 }
 
-export function reduceUserPrompt(partsText, videoTitle, terminologyGuide, videoType = "general") {
+export function reduceUserPrompt(partsText, videoTitle, terminologyGuide, videoType = "general", memoryBlock = "") {
   return `视频标题：《${videoTitle}》
 预判内容类型：${videoType}
 
 规范术语表：
 ${terminologyGuide || "无"}
-
+${memoryBlock ? `\n${memoryBlock}\n` : ""}
 各部分要点摘录：
 
 ${partsText}`;
@@ -254,8 +264,9 @@ export function chatSystemPrompt(videoTitle, hasFullSubs) {
 6. 用户界面是窄边栏：优先用列表和短句，避免 4 列以上的宽表格；展示代码、层级树、对齐文本时必须放进 \`\`\` 代码块。`;
 }
 
-export function chatContextText({ summary, nearbyText, currentTime }) {
+export function chatContextText({ summary, nearbyText, currentTime, profileDigest }) {
   const parts = [];
+  if (profileDigest) parts.push(`【用户画像（来自长期记忆）】\n${profileDigest}`);
   if (summary) parts.push(`【视频总结】\n${summary}`);
   if (typeof currentTime === "number") {
     parts.push(`【用户当前观看位置】约 ${Math.floor(currentTime / 60)} 分 ${Math.floor(currentTime % 60)} 秒`);
@@ -282,4 +293,50 @@ export function mindmapSystemPrompt() {
 
 export function mindmapUserPrompt(subtitleText, videoTitle) {
   return `视频标题：《${videoTitle}》\n\n字幕如下：\n\n${subtitleText}`;
+}
+
+// —— 长期记忆：总结时的读取注入 + 总结后的睡眠期整合 ——
+
+// memoryContext 由 memory.js 检索组装：facts / relatedVideos / topics 都是已过滤的相关内容。
+export function memoryContextBlock(memoryContext) {
+  if (!memoryContext) return "";
+  const lines = ["【用户记忆（这位观众的既有认知，用于校准深度与建立视频间关联）】"];
+  if (memoryContext.facts?.length) {
+    lines.push("关于用户：");
+    lines.push(...memoryContext.facts.map((fact) => `- ${fact}`));
+  }
+  if (memoryContext.relatedVideos?.length) {
+    lines.push("用户已看过的相关视频（connections 只能引用这里的 videoId，原样照抄）：");
+    lines.push(
+      ...memoryContext.relatedVideos.map(
+        (video) => `- ${video.videoId}｜《${video.title}》｜${video.thesis}`
+      )
+    );
+  }
+  if (memoryContext.topics?.length) {
+    lines.push("用户在这些主题上的积累：");
+    lines.push(...memoryContext.topics.map((topic) => `- ${topic.name}：${topic.note}`));
+  }
+  return lines.length > 1 ? lines.join("\n") : "";
+}
+
+export function memoryConsolidationSystemPrompt({ maxFacts, maxTopics } = {}) {
+  return `你是用户的长期记忆管理员。请把「新视频档案」整合进「当前记忆」，输出更新后的完整记忆 JSON。
+
+规则：
+1. 只输出一个合法 JSON 对象，不要代码块或解释：{"facts":["关于用户的事实，每条一句话"],"topics":[{"name":"规范主题名","aliases":["别名"],"note":"用户在这个主题上已了解什么的简记","videoIds":["相关视频ID"]}]}。
+2. facts 只记录关于用户本人的稳定事实（兴趣领域、背景、目标、偏好）：新信息与旧事实矛盾时以新视频为准改写；合并明显重复的条目；与新视频无关的旧事实原样保留；不要把某个视频的具体内容写成用户事实。
+3. topics 记录用户的知识积累：新视频涉及已有主题时，把它的 videoId 合并进去并基于新旧信息改写 note（写“用户已了解什么”，不是复述视频）；全新的主题才新建条目；与本视频无关的主题原样保留。
+4. 记忆是给未来的总结和对话用的，写给“了解这位用户的助手”看。
+5. 数量上限：facts 不超过 ${maxFacts || 24} 条，topics 不超过 ${maxTopics || 60} 条；超限时淘汰最陈旧或不重要的条目。aliases 只在主题有常见别名时给。`;
+}
+
+export function memoryConsolidationUserPrompt(memoryJson, videoDigest) {
+  return `【当前记忆】
+${memoryJson}
+
+【新视频档案】
+${videoDigest}
+
+请输出更新后的完整记忆 JSON。`;
 }

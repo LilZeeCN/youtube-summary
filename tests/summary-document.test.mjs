@@ -31,7 +31,7 @@ test("模型 JSON 会被规范化为带本地字幕证据的 SummaryDocument", (
 
   const document = parseSummaryResponse(raw, { cues });
 
-  assert.equal(document.version, 3);
+  assert.equal(document.version, 4);
   assert.equal(document.videoType, "tutorial");
   assert.equal(document.keyPoints[0].id, "point-1");
   assert.equal(document.keyPoints[0].timestamp, 12);
@@ -60,7 +60,7 @@ test("旧 Markdown 缓存会迁移为结构化文档并保持可复制内容", (
 
   const document = normalizeSummaryDocument(legacy, { cues });
 
-  assert.equal(document.version, 3);
+  assert.equal(document.version, 4);
   assert.equal(document.thesis, "这个视频解释了如何制作可核对的视频总结。");
   assert.equal(document.keyPoints.length, 2);
   assert.equal(document.keyPoints[0].timestamp, 12);
@@ -119,4 +119,31 @@ test("自测问题会被规范化、吸附到真实字幕时刻并导出为 Mark
   assert.match(markdown, /## 自测问题/);
   assert.match(markdown, /- \[0:12\] 学习率过大会发生什么？/);
   assert.match(markdown, /答案：步长过大，损失可能震荡发散。/);
+});
+
+test("关联视频被规范化：非法关系回退、缺字段过滤、可导出", () => {
+  const document = parseSummaryResponse(
+    JSON.stringify({
+      videoType: "tutorial",
+      thesis: "本视频讲解向量检索。",
+      keyPoints: [],
+      chapters: [],
+      extras: null,
+      connections: [
+        { videoId: "rag1", videoTitle: "RAG 入门", relation: "延伸", text: "本视频把上次的检索策略推进到混合检索。" },
+        { videoId: "bad", videoTitle: "x", relation: "随便写的", text: "关系不合法会回退。" },
+        { videoId: "", text: "缺 videoId 会被过滤。" },
+        { videoId: "keep", videoTitle: "无文案", relation: "印证", text: "" },
+      ],
+    }),
+    { cues }
+  );
+
+  assert.equal(document.connections.length, 2);
+  assert.equal(document.connections[0].relation, "延伸");
+  assert.equal(document.connections[1].relation, "关联");
+
+  const markdown = summaryDocumentToMarkdown(document);
+  assert.match(markdown, /## 关联视频/);
+  assert.match(markdown, /- 【延伸】本视频把上次的检索策略推进到混合检索。（《RAG 入门》）/);
 });

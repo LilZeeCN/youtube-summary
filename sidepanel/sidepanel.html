@@ -266,6 +266,23 @@
             <span>打开侧边栏时自动开始总结</span>
           </label>
         </div>
+        <div class="settings-block">
+          <div class="settings-block-head">
+            <span class="block-title">长期记忆</span>
+            <button class="btn ghost sm" id="btn-memory-clear" type="button">清空记忆</button>
+          </div>
+          <label class="field check-row">
+            <input id="set-memory" type="checkbox" />
+            <span>启用跨视频记忆与关联</span>
+          </label>
+          <p class="field-hint">总结时参考你看过的相关视频和用户画像，生成「关联视频」并校准讲解深度；数据全部保存在本地浏览器</p>
+          <div id="memory-panel" class="memory-panel">
+            <div class="memory-sub">用户画像</div>
+            <div id="memory-facts" class="memory-facts"></div>
+            <div class="memory-sub">主题积累</div>
+            <div id="memory-topics" class="memory-topics"></div>
+          </div>
+        </div>
         <div class="settings-notes">
           <p class="note-title">连接示例</p>
           <p>OpenAI：<code>https://api.openai.com/v1</code> + <code>gpt-4o-mini</code></p>

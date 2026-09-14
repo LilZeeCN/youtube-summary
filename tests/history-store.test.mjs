@@ -26,7 +26,7 @@ function installStorageMock(initial = {}) {
   return data;
 }
 
-const { cacheList, cacheRemoveVideo } = await import("../sidepanel/modules/store.js");
+const { cacheList, cacheRemoveVideo, cacheSummaries } = await import("../sidepanel/modules/store.js");
 
 test("cacheList 把分散条目按视频聚合：取最新时间戳、合并类型、按时间倒序", async () => {
   installStorageMock({
@@ -80,4 +80,31 @@ test("cacheRemoveVideo 只删该视频的条目，其他视频不受影响", asy
   const items = await cacheList();
   assert.equal(items.length, 1);
   assert.equal(items[0].videoId, "v9");
+});
+
+test("cacheSummaries 只返回总结条目的精简档案，供记忆检索使用", async () => {
+  installStorageMock({
+    "cache:v1:summary": {
+      videoId: "v1",
+      kind: "summary",
+      ts: 200,
+      title: "RAG 入门",
+      data: {
+        videoType: "tutorial",
+        thesis: "检索增强生成流程",
+        chapters: [{ title: "向量检索" }, { title: "生成" }],
+      },
+    },
+    "cache:v1:chat": { videoId: "v1", kind: "chat", ts: 300, title: "RAG 入门", data: [] },
+    "cache:v2:summary": { videoId: "v2", kind: "summary", ts: 100, title: "其他", data: null },
+  });
+
+  const summaries = await cacheSummaries();
+  assert.equal(summaries.length, 2);
+  assert.equal(summaries[0].videoId, "v1");
+  assert.equal(summaries[0].videoType, "tutorial");
+  assert.equal(summaries[0].thesis, "检索增强生成流程");
+  assert.deepEqual(summaries[0].chapterTitles, ["向量检索", "生成"]);
+  assert.equal(summaries[1].videoType, "general");
+  assert.equal(summaries[1].thesis, "");
 });

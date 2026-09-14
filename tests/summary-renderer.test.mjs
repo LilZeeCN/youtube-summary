@@ -63,3 +63,36 @@ test("自测问题默认隐藏答案，问题与时间戳都可交互", () => {
   assert.match(html, /控制每步更新的幅度。/);
   assert.match(html, /data-t="42"/);
 });
+
+test("关联视频渲染为可打开的链接并转义内容", () => {
+  const html = renderSummaryDocument({
+    version: 4,
+    videoType: "tutorial",
+    thesis: "向量检索实践。",
+    keyPoints: [],
+    chapters: [],
+    extras: null,
+    connections: [
+      {
+        videoId: "rag1",
+        videoTitle: "RAG 入门<script>",
+        relation: "延伸",
+        text: "把上次的检索策略推进到混合检索。",
+      },
+      {
+        videoId: "BV1ab411c7mD?p=2",
+        videoTitle: "B站视频",
+        relation: "对比",
+        text: "两个视频对切分粒度结论相反。",
+      },
+    ],
+  });
+
+  assert.match(html, /关联视频/);
+  assert.match(html, /href="https:\/\/www\.youtube\.com\/watch\?v=rag1"/);
+  assert.match(html, /href="https:\/\/www\.bilibili\.com\/video\/BV1ab411c7mD\?p=2"/);
+  assert.match(html, /延伸/);
+  assert.doesNotMatch(html, /<script>/);
+  assert.match(html, /&lt;script&gt;/);
+  assert.match(html, /B站/);
+});

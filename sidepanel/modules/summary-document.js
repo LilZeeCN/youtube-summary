@@ -1,8 +1,9 @@
 import { formatTime, parseTimestamp } from "./subtitles.js";
 
-export const SUMMARY_DOCUMENT_VERSION = 3;
+export const SUMMARY_DOCUMENT_VERSION = 4;
 
 const VIDEO_TYPES = new Set(["tutorial", "interview", "review", "lecture", "news", "general"]);
+const CONNECTION_RELATIONS = new Set(["印证", "对比", "延伸", "矛盾"]);
 
 function cleanText(value) {
   return String(value ?? "")
@@ -76,6 +77,18 @@ function normalizeSelfTest(value, cues) {
     .filter((item) => item.question);
 }
 
+function normalizeConnections(value) {
+  if (!Array.isArray(value)) return [];
+  return value
+    .map((item) => ({
+      videoId: cleanText(item?.videoId),
+      videoTitle: cleanText(item?.videoTitle),
+      relation: CONNECTION_RELATIONS.has(item?.relation) ? item.relation : "关联",
+      text: cleanText(item?.text),
+    }))
+    .filter((item) => item.videoId && item.text);
+}
+
 function normalizeObject(value, cues) {
   const keyPoints = Array.isArray(value.keyPoints)
     ? value.keyPoints
@@ -111,6 +124,7 @@ function normalizeObject(value, cues) {
     chapters,
     extras: normalizeExtras(value.extras),
     selfTest: normalizeSelfTest(value.selfTest, cues),
+    connections: normalizeConnections(value.connections),
   };
 }
 
@@ -244,6 +258,18 @@ export function summaryDocumentToMarkdown(document) {
         .map(
           (item) =>
             `- [${formatTime(item.timestamp)}] ${item.question}\n  - 答案：${item.answer || "回到视频对应位置确认"}`
+        )
+        .join("\n")
+    );
+  }
+
+  if (value.connections.length) {
+    blocks.push(
+      "## 关联视频",
+      value.connections
+        .map(
+          (item) =>
+            `- 【${item.relation}】${item.text}（${item.videoTitle ? `《${item.videoTitle}》` : item.videoId}）`
         )
         .join("\n")
     );

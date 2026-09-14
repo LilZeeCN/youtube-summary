@@ -41,6 +41,40 @@ test("type-specific guidance shapes thesis, key points and extras", () => {
   assert.match(plain, /覆盖视频主干/);
 });
 
+test("记忆上下文注入与关联规则按开关生效", () => {
+  const withMemory = prompts.summarySystemPrompt("general", {}, true);
+  assert.match(withMemory, /connections/);
+  assert.match(withMemory, /校准深度/);
+  assert.doesNotMatch(prompts.summarySystemPrompt("general", {}, false), /校准深度/);
+
+  const block = prompts.memoryContextBlock({
+    facts: ["用户是前端工程师"],
+    relatedVideos: [{ videoId: "rag1", title: "RAG 入门", thesis: "检索增强流程" }],
+    topics: [{ name: "RAG", note: "已了解流程" }],
+  });
+  assert.match(block, /【用户记忆/);
+  assert.match(block, /- 用户是前端工程师/);
+  assert.match(block, /- rag1｜《RAG 入门》｜检索增强流程/);
+  assert.match(block, /- RAG：已了解流程/);
+  assert.equal(prompts.memoryContextBlock(null), "");
+});
+
+test("睡眠期整合提示词带数量上限并要求输出完整 JSON", () => {
+  const system = prompts.memoryConsolidationSystemPrompt({ maxFacts: 24, maxTopics: 60 });
+  assert.match(system, /facts 不超过 24 条/);
+  assert.match(system, /topics 不超过 60 条/);
+  assert.match(system, /"facts"/);
+  assert.match(system, /"topics"/);
+});
+
+test("用户提示词在提供记忆时插入记忆块", () => {
+  const user = prompts.summaryUserPrompt("[00:10] 字幕", "标题", 60, "", "general", "【用户记忆（这位观众的既有认知，用于校准深度与建立视频间关联）】\n- 用户是前端工程师");
+  assert.match(user, /【用户记忆/);
+  assert.match(user, /字幕如下/);
+  const plain = prompts.summaryUserPrompt("[00:10] 字幕", "标题", 60, "", "general");
+  assert.doesNotMatch(plain, /【用户记忆/);
+});
+
 test("terminology prompts use the title and representative transcript", () => {
   const system = prompts.terminologySystemPrompt();
   const user = prompts.terminologyUserPrompt("PAGENT can use tools", "Pi Agent 入门");

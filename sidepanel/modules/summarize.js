@@ -7,6 +7,7 @@ import { applyTerminologyGuide, normalizeTerminologyGuide } from "./terminology.
 import { normalizeSummaryDocument, parseSummaryResponse } from "./summary-document.js";
 import { segmentTranscript } from "./transcript-segmentation.js";
 import { inferVideoType, summaryExtraSpec } from "./video-type.js";
+import { buildMemoryContext } from "./memory.js";
 
 // 保守阈值：约等于主流模型 8k~16k token 的安全输入量（中文约 1 字符 = 1 token）
 const CHUNK_THRESHOLD = 18000;
@@ -45,10 +46,12 @@ async function buildTerminologyGuide({ settings, title, description, cues, fullT
 
 export async function generateSummary({
   settings,
+  videoId,
   title,
   duration,
   cues,
   description,
+  memoryContext,
   onDelta,
   onStage,
   signal,
@@ -61,16 +64,27 @@ export async function generateSummary({
     transcriptSample: fullText.slice(0, 5000),
   });
   const extraSpec = summaryExtraSpec(videoType);
+  // 调用方未传时（如自动总结）在内部补一次记忆检索；显式传 null 表示本次禁用记忆
+  const memory = memoryContext === undefined
+    ? await buildMemoryContext({
+        settings,
+        videoId,
+        title,
+        description,
+        transcriptSample: fullText.slice(0, 4000),
+      })
+    : memoryContext;
+  const memoryBlock = prompts.memoryContextBlock(memory);
 
   if (fullText.length <= CHUNK_THRESHOLD) {
     if (onStage) onStage("正在分析字幕，等待模型开始输出…");
     const raw = await chat({
       settings,
       messages: [
-        { role: "system", content: prompts.summarySystemPrompt(videoType, extraSpec) },
+        { role: "system", content: prompts.summarySystemPrompt(videoType, extraSpec, !!memoryBlock) },
         {
           role: "user",
-          content: prompts.summaryUserPrompt(fullText, title, duration, description, videoType),
+          content: prompts.summaryUserPrompt(fullText, title, duration, description, videoType, memoryBlock),
         },
       ],
       onDelta,
@@ -130,10 +144,10 @@ export async function generateSummary({
   const summary = await chat({
     settings,
     messages: [
-      { role: "system", content: prompts.reduceSystemPrompt(videoType, extraSpec) },
+      { role: "system", content: prompts.reduceSystemPrompt(videoType, extraSpec, !!memoryBlock) },
       {
         role: "user",
-        content: prompts.reduceUserPrompt(parts.join("\n\n"), title, terminologyGuide, videoType),
+        content: prompts.reduceUserPrompt(parts.join("\n\n"), title, terminologyGuide, videoType, memoryBlock),
       },
     ],
     onDelta: onDelta

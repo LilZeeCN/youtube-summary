@@ -28,6 +28,13 @@ import { validateTimestamps } from "./modules/timestamp-validator.js";
 import { applyTheme, observeSystemTheme } from "./modules/theme.js";
 import { evaluateSummaryQuality } from "./modules/summary-quality.js";
 import { videoUrlFromId, platformFromId } from "./modules/video-link.js";
+import {
+  loadMemory,
+  deleteMemoryEntry,
+  clearMemory,
+  consolidateMemory,
+  memoryProfileDigest,
+} from "./modules/memory.js";
 
 const $ = (sel) => document.querySelector(sel);
 
@@ -496,6 +503,32 @@ function updateQualityBanner() {
   banner.classList.remove("hidden");
 }
 
+/* ---------------- 长期记忆管理 ---------------- */
+
+async function renderMemoryPanel() {
+  const factsBox = $("#memory-facts");
+  const topicsBox = $("#memory-topics");
+  if (!factsBox || !topicsBox) return;
+  const memory = await loadMemory();
+  factsBox.innerHTML = memory.facts.length
+    ? memory.facts
+        .map(
+          (fact) =>
+            `<div class="memory-row"><span>${escapeHtmlText(fact.text)}</span><button class="memory-del" data-memory-del="${fact.id}" type="button" title="删除这条记忆">✕</button></div>`
+        )
+        .join("")
+    : `<p class="memory-empty">还没有画像记忆，总结几个视频后会自动积累</p>`;
+  topicsBox.innerHTML = memory.topics.length
+    ? memory.topics
+        .slice(0, 20)
+        .map(
+          (topic) =>
+            `<div class="memory-row memory-topic"><span class="memory-topic-name">${escapeHtmlText(topic.name)}</span><span class="memory-topic-note">${escapeHtmlText(topic.note)}</span><button class="memory-del" data-memory-del="${topic.id}" type="button" title="删除这个主题">✕</button></div>`
+        )
+        .join("") + (memory.topics.length > 20 ? `<p class="memory-empty">… 共 ${memory.topics.length} 个主题</p>` : "")
+    : `<p class="memory-empty">还没有主题积累</p>`;
+}
+
 let summaryAbort = null;
 let summaryProgressTimer = null;
 
@@ -552,6 +585,7 @@ async function startSummary() {
     const cues = await ensureCues();
     const document = await generateSummary({
       settings: state.settings,
+      videoId: state.video.videoId,
       title: state.video.title,
       duration: Number(state.video.lengthSeconds) || 0,
       description: state.video.description || "",
@@ -570,6 +604,15 @@ async function startSummary() {
       title: state.video.title,
     });
     await store.cacheRemove(state.video.videoId, "deepRead");
+    if (state.settings.memoryEnabled) {
+      // 睡眠期整合：后台静默更新长期记忆，不阻塞总结流程，失败自动放弃
+      void consolidateMemory({
+        settings: state.settings,
+        videoId: state.video.videoId,
+        title: state.video.title,
+        summaryDocument: document,
+      }).then(() => renderMemoryPanel());
+    }
     $("#sum-meta").textContent = `${currentModelLabel()} · ${new Date().toLocaleTimeString("zh-CN", { hour: "2-digit", minute: "2-digit" })}`;
     $("#sum-actions").classList.remove("hidden");
     renderSummaryState();
@@ -769,6 +812,7 @@ async function sendChat(question) {
       summary: state.summary ? summaryDocumentToMarkdown(state.summary) : "",
       nearbyText: nearby,
       currentTime,
+      profileDigest: await memoryProfileDigest({ settings: state.settings }),
     });
     const history = state.chat.slice(-11, -1); // 不含刚 push 的这条
     const messages = [
@@ -1307,6 +1351,21 @@ function bind() {
   $("#set-auto").addEventListener("change", async (e) => {
     state.settings = await store.saveSettings({ autoSummarize: e.target.checked });
   });
+  $("#set-memory").addEventListener("change", async (e) => {
+    state.settings = await store.saveSettings({ memoryEnabled: e.target.checked });
+    $("#memory-panel").classList.toggle("disabled", !e.target.checked);
+  });
+  $("#btn-memory-clear").addEventListener("click", async () => {
+    await clearMemory();
+    await renderMemoryPanel();
+    toast("已清空长期记忆");
+  });
+  $("#memory-panel").addEventListener("click", async (e) => {
+    const del = e.target.closest("[data-memory-del]");
+    if (!del) return;
+    await deleteMemoryEntry(del.dataset.memoryDel);
+    await renderMemoryPanel();
+  });
 }
 
 /* ---------------- 启动 ---------------- */
@@ -1316,6 +1375,9 @@ async function init() {
   applyTheme(state.settings.theme);
   $("#set-auto").checked = !!state.settings.autoSummarize;
   $("#set-theme").value = state.settings.theme || "auto";
+  $("#set-memory").checked = state.settings.memoryEnabled !== false;
+  $("#memory-panel").classList.toggle("disabled", state.settings.memoryEnabled === false);
+  void renderMemoryPanel();
   bind();
   // 跟随系统时，系统切换深浅色要实时跟进；显式选择的主题不受影响
   observeSystemTheme(() => {

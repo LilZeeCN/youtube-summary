@@ -360,6 +360,107 @@ body { background: var(--bg); color: var(--text); }
   font-size: 11px;
   line-height: 1.6;
 }
+.summary-connections-hint {
+  margin: 0 0 4px;
+  color: var(--text3);
+  font-size: 10.5px;
+  line-height: 1.5;
+}
+.summary-connection {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr);
+  gap: 9px;
+  padding: 10px 0 11px;
+  border-bottom: 1px solid var(--border);
+  text-decoration: none;
+}
+.summary-connection:hover .summary-connection-title {
+  color: var(--text2);
+  text-decoration: underline;
+}
+.summary-connection-relation {
+  align-self: flex-start;
+  padding: 1px 6px;
+  border: 1px solid var(--border-strong);
+  border-radius: 8px;
+  color: var(--text2);
+  font: 9.5px/15px var(--mono);
+  text-align: center;
+}
+.summary-connection-body {
+  min-width: 0;
+}
+.summary-doc .summary-connection-body p {
+  margin: 0;
+  color: var(--text2);
+  font-size: 12px;
+  line-height: 1.6;
+}
+.summary-connection-title {
+  display: block;
+  margin-top: 3px;
+  color: var(--text3);
+  font-size: 10.5px;
+  transition: color .12s;
+}
+.memory-panel {
+  margin-top: 4px;
+}
+.memory-panel.disabled {
+  opacity: .45;
+  pointer-events: none;
+}
+.memory-sub {
+  margin: 12px 0 5px;
+  color: var(--text3);
+  font-size: 10px;
+  letter-spacing: .04em;
+}
+.memory-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--border);
+  color: var(--text2);
+  font-size: 11.5px;
+  line-height: 1.55;
+}
+.memory-row > span:first-child {
+  flex: 1;
+  min-width: 0;
+}
+.memory-topic-name {
+  flex: none !important;
+  max-width: 96px;
+  overflow: hidden;
+  color: var(--text);
+  font-weight: 540;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.memory-topic-note {
+  flex: 1;
+  color: var(--text3);
+}
+.memory-del {
+  flex: none;
+  padding: 0 4px;
+  color: var(--text3);
+  background: transparent;
+  border: 0;
+  font-size: 11px;
+  cursor: pointer;
+}
+.memory-del:hover {
+  color: var(--text);
+}
+.memory-empty {
+  margin: 4px 0;
+  color: var(--text3);
+  font-size: 10.5px;
+  line-height: 1.5;
+}
 
 /* 精读关系图：知识蓝图式 SVG，而不是字符树代码块 */
 .relation-diagram {

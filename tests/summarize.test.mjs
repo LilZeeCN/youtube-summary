@@ -7,9 +7,11 @@ test("短视频生成接口直接返回可渲染的 SummaryDocument", async () =
   const calls = [];
   const document = await generateSummary({
     settings: { model: "test" },
+    videoId: "v1",
     title: "从零开始搭建工作流教程",
     duration: 80,
     description: "安装并完成第一个自动化流程",
+    memoryContext: null,
     cues: [
       { start: 0, text: "今天从零开始搭建一个工作流。" },
       { start: 15, text: "先创建项目，再连接输入。" },
@@ -29,7 +31,7 @@ test("短视频生成接口直接返回可渲染的 SummaryDocument", async () =
   assert.equal(calls.length, 1);
   assert.match(calls[0].messages[0].content, /JSON/);
   assert.match(calls[0].messages[0].content, /selfTest/);
-  assert.equal(document.version, 3);
+  assert.equal(document.version, 4);
   assert.equal(document.videoType, "tutorial");
   assert.ok(document.keyPoints[0].evidence.some((item) => item.start === 15));
 });

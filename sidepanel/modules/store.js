@@ -16,6 +16,7 @@ const DEFAULT_SETTINGS = {
   model: "",
   autoSummarize: false, // 打开侧边栏且有字幕时自动开始总结
   theme: "auto", // 界面主题偏好：auto 跟随系统 / light / dark
+  memoryEnabled: true, // 长期记忆：跨视频关联与用户画像（全部本地保存）
 };
 
 export { DEFAULT_SETTINGS };
@@ -84,6 +85,7 @@ export async function getSettings() {
     ...DEFAULT_SETTINGS,
     autoSummarize: !!settings.autoSummarize,
     theme: settings.theme || "auto",
+    memoryEnabled: settings.memoryEnabled !== false,
     provider: active ? active.provider : "openai",
     apiUrl: active ? active.apiUrl : "",
     apiKey: active ? active.apiKey : "",
@@ -216,4 +218,25 @@ export async function cacheRemoveVideo(videoId) {
     (k) => k.startsWith(CACHE_PREFIX) && all[k] && all[k].videoId === videoId
   );
   await chrome.storage.local.remove(keys);
+}
+
+// 情景记忆视图：全部已总结视频的精简档案，供长期记忆做跨视频检索
+export async function cacheSummaries() {
+  const all = await chrome.storage.local.get(null);
+  const out = [];
+  for (const [key, entry] of Object.entries(all)) {
+    if (!key.startsWith(CACHE_PREFIX) || !entry || entry.kind !== "summary" || !entry.videoId) continue;
+    const data = entry.data && typeof entry.data === "object" ? entry.data : {};
+    out.push({
+      videoId: entry.videoId,
+      title: String(entry.title || ""),
+      ts: Number(entry.ts) || 0,
+      videoType: data.videoType || "general",
+      thesis: String(data.thesis || ""),
+      chapterTitles: Array.isArray(data.chapters)
+        ? data.chapters.map((chapter) => chapter && chapter.title).filter(Boolean)
+        : [],
+    });
+  }
+  return out.sort((a, b) => b.ts - a.ts);
 }

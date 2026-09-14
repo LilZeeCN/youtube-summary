@@ -274,6 +274,9 @@
 [data-theme="light"] .summary-selftest-answer {
   background: oklch(0.25 0.015 285 / 0.035);
 }
+[data-theme="light"] .summary-connection:hover .summary-connection-title {
+  color: var(--text2);
+}
 
 /* ============ 精读关系图 ============ */
 

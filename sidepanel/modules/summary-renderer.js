@@ -1,6 +1,7 @@
 import { normalizeSummaryDocument } from "./summary-document.js";
 import { formatTime } from "./subtitles.js";
 import { videoTypeLabel } from "./video-type.js";
+import { videoUrlFromId, platformFromId } from "./video-link.js";
 
 function escapeHtml(value) {
   return String(value ?? "")
@@ -82,6 +83,18 @@ function renderSelfTestItem(item, index) {
   </article>`;
 }
 
+function renderConnection(item) {
+  const url = videoUrlFromId(item.videoId);
+  const platform = platformFromId(item.videoId) === "bilibili" ? "B站" : "YouTube";
+  return `<a class="summary-connection" href="${escapeHtml(url)}" target="_blank" rel="noreferrer noopener">
+    <span class="summary-connection-relation">${escapeHtml(item.relation)}</span>
+    <span class="summary-connection-body">
+      <p>${escapeHtml(item.text)}</p>
+      <span class="summary-connection-title">${escapeHtml(item.videoTitle || item.videoId)} · ${platform}</span>
+    </span>
+  </a>`;
+}
+
 export function renderSummaryDocument(document) {
   const value = normalizeSummaryDocument(document);
   const points = value.keyPoints.map(renderPoint).join("");
@@ -92,9 +105,16 @@ export function renderSummaryDocument(document) {
         <ul>${value.extras.items.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul>
       </section>`
     : "";
+  const connections = value.connections.length
+    ? `<section class="summary-section summary-connections">
+        <div class="summary-section-heading"><span>04</span><h3>关联视频</h3></div>
+        <p class="summary-connections-hint">基于你看过的视频建立的跨视频关联，点击可打开原视频。</p>
+        <div class="summary-connections-list">${value.connections.map(renderConnection).join("")}</div>
+      </section>`
+    : "";
   const selfTest = value.selfTest.length
     ? `<section class="summary-section summary-selftest">
-        <div class="summary-section-heading"><span>04</span><h3>自测问题</h3></div>
+        <div class="summary-section-heading"><span>05</span><h3>自测问题</h3></div>
         <p class="summary-selftest-hint">先自己回答，再展开核对；时间戳可跳回视频验证。</p>
         <div class="summary-selftest-list">${value.selfTest.map(renderSelfTestItem).join("")}</div>
       </section>`
@@ -114,6 +134,7 @@ export function renderSummaryDocument(document) {
       <div class="summary-chapters">${chapters}</div>
     </section>` : ""}
     ${extras}
+    ${connections}
     ${selfTest}
   </div>`;
 }
