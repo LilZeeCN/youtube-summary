@@ -31,7 +31,7 @@ test("模型 JSON 会被规范化为带本地字幕证据的 SummaryDocument", (
 
   const document = parseSummaryResponse(raw, { cues });
 
-  assert.equal(document.version, 2);
+  assert.equal(document.version, 3);
   assert.equal(document.videoType, "tutorial");
   assert.equal(document.keyPoints[0].id, "point-1");
   assert.equal(document.keyPoints[0].timestamp, 12);
@@ -60,7 +60,7 @@ test("旧 Markdown 缓存会迁移为结构化文档并保持可复制内容", (
 
   const document = normalizeSummaryDocument(legacy, { cues });
 
-  assert.equal(document.version, 2);
+  assert.equal(document.version, 3);
   assert.equal(document.thesis, "这个视频解释了如何制作可核对的视频总结。");
   assert.equal(document.keyPoints.length, 2);
   assert.equal(document.keyPoints[0].timestamp, 12);
@@ -91,4 +91,32 @@ test("已经是新版缓存时只做清洗，不丢失已有证据", () => {
 
   assert.equal(document.keyPoints[0].id, "point-existing");
   assert.deepEqual(document.keyPoints[0].evidence, [{ start: 12, text: "原缓存中的证据" }]);
+  assert.deepEqual(document.selfTest, []);
+});
+
+test("自测问题会被规范化、吸附到真实字幕时刻并导出为 Markdown", () => {
+  const document = parseSummaryResponse(
+    JSON.stringify({
+      videoType: "lecture",
+      thesis: "这堂课解释了梯度下降的原理。",
+      keyPoints: [{ timestamp: "00:12", text: "学习率决定步长。" }],
+      chapters: [],
+      extras: null,
+      selfTest: [
+        { timestamp: "00:13", question: "学习率过大会发生什么？", answer: "步长过大，损失可能震荡发散。" },
+        { timestamp: "", question: "", answer: "无效项应被过滤" },
+      ],
+    }),
+    { cues }
+  );
+
+  assert.equal(document.selfTest.length, 1);
+  assert.equal(document.selfTest[0].id, "quiz-1");
+  assert.equal(document.selfTest[0].timestamp, 12);
+  assert.equal(document.selfTest[0].question, "学习率过大会发生什么？");
+
+  const markdown = summaryDocumentToMarkdown(document);
+  assert.match(markdown, /## 自测问题/);
+  assert.match(markdown, /- \[0:12\] 学习率过大会发生什么？/);
+  assert.match(markdown, /答案：步长过大，损失可能震荡发散。/);
 });

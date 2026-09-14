@@ -16,6 +16,31 @@ test("summary prompts require contextual ASR correction and canonical terminolog
   assert.match(system, /不确定/);
 });
 
+test("summary prompts require self-test questions, concreteness and adaptive chapter length", () => {
+  const system = prompts.summarySystemPrompt();
+  const reduce = prompts.reduceSystemPrompt();
+
+  for (const prompt of [system, reduce]) {
+    assert.match(prompt, /selfTest/);
+    assert.match(prompt, /自测|检验理解/);
+    assert.match(prompt, /章节摘要的长度与章节时长匹配|时长匹配/);
+  }
+  assert.match(system, /空泛表述/);
+});
+
+test("type-specific guidance shapes thesis, key points and extras", () => {
+  const review = prompts.summarySystemPrompt(
+    "review",
+    { title: "选择建议", guidance: "按结论组织。", thesisHint: "thesis 必须先给出「值不值得」的明确结论。", pointHint: "优先覆盖对比结论。" }
+  );
+  assert.match(review, /值不值得/);
+  assert.match(review, /优先覆盖对比结论/);
+
+  const plain = prompts.summarySystemPrompt("general", {});
+  assert.doesNotMatch(plain, /undefined/);
+  assert.match(plain, /覆盖视频主干/);
+});
+
 test("terminology prompts use the title and representative transcript", () => {
   const system = prompts.terminologySystemPrompt();
   const user = prompts.terminologyUserPrompt("PAGENT can use tools", "Pi Agent 入门");

@@ -63,6 +63,25 @@ function renderChapter(chapter) {
   </article>`;
 }
 
+function renderSelfTestItem(item, index) {
+  const id = escapeHtml(item.id);
+  return `<article class="summary-selftest-item">
+    <div class="summary-selftest-head">
+      <span class="summary-selftest-q">Q${index + 1}</span>
+      <p>${escapeHtml(item.question)}</p>
+      ${timestampButton(item.timestamp, "summary-selftest-time")}
+    </div>
+    <div class="summary-selftest-tools">
+      <button class="summary-selftest-toggle" data-selftest-toggle="${id}" type="button" aria-expanded="false">
+        <span>查看答案</span>
+      </button>
+    </div>
+    <div class="summary-selftest-answer hidden" data-selftest-answer="${id}">
+      <p>${escapeHtml(item.answer || "回到视频对应位置确认。")}</p>
+    </div>
+  </article>`;
+}
+
 export function renderSummaryDocument(document) {
   const value = normalizeSummaryDocument(document);
   const points = value.keyPoints.map(renderPoint).join("");
@@ -71,6 +90,13 @@ export function renderSummaryDocument(document) {
     ? `<section class="summary-section summary-extra">
         <div class="summary-section-heading"><span>03</span><h3>${escapeHtml(value.extras.title)}</h3></div>
         <ul>${value.extras.items.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul>
+      </section>`
+    : "";
+  const selfTest = value.selfTest.length
+    ? `<section class="summary-section summary-selftest">
+        <div class="summary-section-heading"><span>04</span><h3>自测问题</h3></div>
+        <p class="summary-selftest-hint">先自己回答，再展开核对；时间戳可跳回视频验证。</p>
+        <div class="summary-selftest-list">${value.selfTest.map(renderSelfTestItem).join("")}</div>
       </section>`
     : "";
 
@@ -88,5 +114,6 @@ export function renderSummaryDocument(document) {
       <div class="summary-chapters">${chapters}</div>
     </section>` : ""}
     ${extras}
+    ${selfTest}
   </div>`;
 }

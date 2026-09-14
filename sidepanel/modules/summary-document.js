@@ -1,6 +1,6 @@
 import { formatTime, parseTimestamp } from "./subtitles.js";
 
-export const SUMMARY_DOCUMENT_VERSION = 2;
+export const SUMMARY_DOCUMENT_VERSION = 3;
 
 const VIDEO_TYPES = new Set(["tutorial", "interview", "review", "lecture", "news", "general"]);
 
@@ -64,6 +64,18 @@ function normalizeExtras(value) {
   return title && items.length ? { title, items } : null;
 }
 
+function normalizeSelfTest(value, cues) {
+  if (!Array.isArray(value)) return [];
+  return value
+    .map((item, index) => ({
+      id: cleanText(item?.id) || `quiz-${index + 1}`,
+      timestamp: normalizeTimestamp(item?.timestamp, cues),
+      question: cleanText(item?.question),
+      answer: cleanText(item?.answer),
+    }))
+    .filter((item) => item.question);
+}
+
 function normalizeObject(value, cues) {
   const keyPoints = Array.isArray(value.keyPoints)
     ? value.keyPoints
@@ -98,6 +110,7 @@ function normalizeObject(value, cues) {
     keyPoints,
     chapters,
     extras: normalizeExtras(value.extras),
+    selfTest: normalizeSelfTest(value.selfTest, cues),
   };
 }
 
@@ -221,6 +234,18 @@ export function summaryDocumentToMarkdown(document) {
     blocks.push(
       `## ${value.extras.title}`,
       value.extras.items.map((item) => `- ${item}`).join("\n")
+    );
+  }
+
+  if (value.selfTest.length) {
+    blocks.push(
+      "## 自测问题",
+      value.selfTest
+        .map(
+          (item) =>
+            `- [${formatTime(item.timestamp)}] ${item.question}\n  - 答案：${item.answer || "回到视频对应位置确认"}`
+        )
+        .join("\n")
     );
   }
 

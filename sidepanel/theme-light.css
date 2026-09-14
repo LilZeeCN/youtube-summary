@@ -271,6 +271,9 @@
 [data-theme="light"] .summary-evidence {
   background: oklch(0.25 0.015 285 / 0.035);
 }
+[data-theme="light"] .summary-selftest-answer {
+  background: oklch(0.25 0.015 285 / 0.035);
+}
 
 /* ============ 精读关系图 ============ */
 

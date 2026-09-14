@@ -41,3 +41,25 @@ test("渲染器会转义模型输出，避免把内容当成 HTML", () => {
   assert.doesNotMatch(html, /<img/);
   assert.match(html, /&lt;img/);
 });
+
+test("自测问题默认隐藏答案，问题与时间戳都可交互", () => {
+  const html = renderSummaryDocument({
+    version: 3,
+    videoType: "lecture",
+    thesis: "理解梯度下降。",
+    keyPoints: [],
+    chapters: [],
+    extras: null,
+    selfTest: [
+      { id: "quiz-1", timestamp: 42, question: "学习率的作用是什么？", answer: "控制每步更新的幅度。" },
+    ],
+  });
+
+  assert.match(html, /自测问题/);
+  assert.match(html, /data-selftest-toggle="quiz-1"/);
+  assert.match(html, /data-selftest-answer="quiz-1"/);
+  assert.match(html, /class="summary-selftest-answer hidden"/);
+  assert.match(html, /学习率的作用是什么？/);
+  assert.match(html, /控制每步更新的幅度。/);
+  assert.match(html, /data-t="42"/);
+});

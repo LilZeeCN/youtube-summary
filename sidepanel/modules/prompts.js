@@ -7,16 +7,27 @@ const SUMMARY_JSON_SCHEMA = `{
     { "timestamp": "mm:ss", "text": "一个可独立理解的关键结论" }
   ],
   "chapters": [
-    { "timestamp": "mm:ss", "title": "章节标题", "summary": "本章 2~3 句话概括" }
+    { "timestamp": "mm:ss", "title": "章节标题", "summary": "本章概括，句数与章节时长匹配" }
   ],
-  "extras": { "title": "指定的补充区块标题", "items": ["补充内容"] }
+  "extras": { "title": "指定的补充区块标题", "items": ["补充内容"] },
+  "selfTest": [
+    { "timestamp": "mm:ss", "question": "检验理解的问题", "answer": "来自视频的简短答案" }
+  ]
 }`;
 
 const ASR_CORRECTION_RULES = `字幕来自自动语音识别（ASR），可能把同一个专有名称识别成不同拼写。请结合视频标题、全文上下文和术语表纠正明显的识别错误，并在全文统一使用同一个规范名称。视频标题中的专有名称优先作为规范写法；不确定或没有足够证据时保留原文，不要猜测或擅自创造术语。`;
 
+const CONCRETENESS_RULES = `要点与章节摘要必须直接陈述内容本身，禁止「介绍了」「讲解了」「展开了」「非常重要」这类只描述视频行为的空泛表述，保留数字、参数、名称、条件等具体信息。`;
+
+const CHAPTER_LENGTH_RULES = `章节摘要的长度与章节时长匹配：约 5 分钟以内的章节 1~2 句，5~15 分钟 2~3 句，更长的章节 3~5 句并点出这段内容推进了什么。`;
+
+const SELF_TEST_RULES = `selfTest 出 3~5 个检验理解的问题：只依据视频内容即可回答，考查对原理、方法或结论的理解，不出纯记忆细节的题；answer 用一两句话作答且必须来自视频；timestamp 指向答案在视频中的位置。视频内容太单薄时可减少题数。`;
+
 export function summarySystemPrompt(videoType = "general", extraSpec = {}) {
   const extraTitle = extraSpec.title || "值得记住";
   const extraGuidance = extraSpec.guidance || "补充主干总结之外最值得保留的信息，避免重复。";
+  const thesisHint = extraSpec.thesisHint ? `\n10. ${extraSpec.thesisHint}` : "";
+  const pointHint = extraSpec.pointHint || "覆盖视频主干";
   return `你是一位专业的视频内容分析师。用户会给你一份带时间戳的视频字幕，请用简体中文输出可以被程序读取的结构化总结。
 
 要求：
@@ -26,10 +37,10 @@ ${SUMMARY_JSON_SCHEMA}
 3. ${ASR_CORRECTION_RULES}
 4. 字幕可能没有标点，请根据语义智能断句理解。
 5. 专业术语统一采用规范名称，首次出现时可在括号里注明规范英文原名，例如：梯度下降（Gradient Descent）。
-6. 提炼观点与结论，不要逐句复述字幕。
+6. 提炼观点与结论，不要逐句复述字幕。${CONCRETENESS_RULES}
 7. 如果提供了视频描述，其中常含 UP主自己写的章节时间表与专有名词规范写法：划分章节时优先参考官方章节，术语写法优先采用描述中的规范名称。
 8. 当前预判的视频类型是 ${videoType}。如字幕明确显示类型不同，可修正 videoType；但 extras.title 必须写“${extraTitle}”，内容要求：${extraGuidance}
-9. keyPoints 保留 5~8 条并覆盖视频主干；chapters 按内容演进划分 3~8 章。内容不足时宁可减少数量，也不要凑数。`;
+9. keyPoints 保留 5~8 条，${pointHint}；chapters 按内容演进划分 3~8 章。${CHAPTER_LENGTH_RULES}内容不足时宁可减少数量，也不要凑数。${SELF_TEST_RULES}${thesisHint}`;
 }
 
 // 描述是免费的准确率来源，但要防两点：太长（截断）和与字幕冲突（以字幕为准）
@@ -70,6 +81,7 @@ export function terminologyUserPrompt(subtitleSample, videoTitle, description) {
 export function chunkSystemPrompt() {
   return `你是视频内容分析师。这是长视频字幕的第 N/M 部分。请用简体中文列出这部分内容的要点，每条以字幕中真实出现的时间戳 [mm:ss] 开头，5~10 条，不要编造时间戳，不要输出其他内容。
 
+${CONCRETENESS_RULES}
 ${ASR_CORRECTION_RULES}
 必须遵守用户提供的规范术语表，不要在不同要点中混用同一术语的识别变体。`;
 }
@@ -88,14 +100,16 @@ ${subtitleText}`;
 export function reduceSystemPrompt(videoType = "general", extraSpec = {}) {
   const extraTitle = extraSpec.title || "值得记住";
   const extraGuidance = extraSpec.guidance || "补充主干总结之外最值得保留的信息，避免重复。";
+  const thesisHint = extraSpec.thesisHint ? `\n${extraSpec.thesisHint}` : "";
   return `你是一位专业的视频内容分析师。用户提供了一个长视频各段落的要点摘录（含时间戳）。请把它们整合成一份完整的视频总结，用简体中文。
 
 只输出一个合法 JSON 对象，不要 Markdown 代码块或任何解释。结构必须严格符合：
 ${SUMMARY_JSON_SCHEMA}
 
-时间戳必须来自所提供的摘录，绝不编造。章节按内容逻辑合并或拆分。
+时间戳必须来自所提供的摘录，绝不编造。章节按内容逻辑合并或拆分，时长可由相邻章节时间戳估算；${CHAPTER_LENGTH_RULES}${CONCRETENESS_RULES}
 汇总前先检查各部分是否存在同一术语的不同拼写或语义矛盾；严格按照规范术语表统一术语，并根据视频标题和上下文消解明显冲突。不确定时使用审慎表述，不要自行补充事实。
-预判视频类型是 ${videoType}；如内容证据明确可修正。extras.title 必须写“${extraTitle}”，内容要求：${extraGuidance}`;
+预判视频类型是 ${videoType}；如内容证据明确可修正。extras.title 必须写“${extraTitle}”，内容要求：${extraGuidance}${thesisHint}
+${SELF_TEST_RULES}`;
 }
 
 export function reduceUserPrompt(partsText, videoTitle, terminologyGuide, videoType = "general") {

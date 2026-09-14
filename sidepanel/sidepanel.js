@@ -464,6 +464,9 @@ const QUALITY_MESSAGES = {
   evidence: "部分要点缺少字幕依据，可能与原视频不符",
   timeline: "要点时间集中在视频局部，可能遗漏其他段落",
   repetition: "存在内容重复的要点",
+  vagueness: "部分要点过于空泛（只写“介绍了什么”而没有具体内容）",
+  overlap: "关键要点与章节摘要存在整句重复",
+  chapterDepth: "部分长章节的摘要过于单薄",
 };
 
 function updateQualityBanner() {
@@ -1089,6 +1092,19 @@ function bind() {
       evidenceButton.querySelector("span:first-child").textContent = willOpen
         ? "收起字幕依据"
         : "查看字幕依据";
+      return;
+    }
+    const selfTestButton = event.target.closest("[data-selftest-toggle]");
+    if (selfTestButton) {
+      const id = selfTestButton.dataset.selftestToggle;
+      const answer = Array.from($("#sum-md").querySelectorAll("[data-selftest-answer]")).find(
+        (item) => item.dataset.selftestAnswer === id
+      );
+      if (!answer) return;
+      const willOpen = answer.classList.contains("hidden");
+      answer.classList.toggle("hidden", !willOpen);
+      selfTestButton.setAttribute("aria-expanded", String(willOpen));
+      selfTestButton.querySelector("span").textContent = willOpen ? "收起答案" : "查看答案";
       return;
     }
     const refineButton = event.target.closest("[data-summary-refine]");
