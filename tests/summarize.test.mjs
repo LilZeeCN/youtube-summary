@@ -31,7 +31,7 @@ test("短视频生成接口直接返回可渲染的 SummaryDocument", async () =
   assert.equal(calls.length, 1);
   assert.match(calls[0].messages[0].content, /JSON/);
   assert.match(calls[0].messages[0].content, /selfTest/);
-  assert.equal(document.version, 4);
+  assert.equal(document.version, 5);
   assert.equal(document.videoType, "tutorial");
   assert.ok(document.keyPoints[0].evidence.some((item) => item.start === 15));
 });

@@ -31,7 +31,7 @@ test("模型 JSON 会被规范化为带本地字幕证据的 SummaryDocument", (
 
   const document = parseSummaryResponse(raw, { cues });
 
-  assert.equal(document.version, 4);
+  assert.equal(document.version, 5);
   assert.equal(document.videoType, "tutorial");
   assert.equal(document.keyPoints[0].id, "point-1");
   assert.equal(document.keyPoints[0].timestamp, 12);
@@ -60,7 +60,7 @@ test("旧 Markdown 缓存会迁移为结构化文档并保持可复制内容", (
 
   const document = normalizeSummaryDocument(legacy, { cues });
 
-  assert.equal(document.version, 4);
+  assert.equal(document.version, 5);
   assert.equal(document.thesis, "这个视频解释了如何制作可核对的视频总结。");
   assert.equal(document.keyPoints.length, 2);
   assert.equal(document.keyPoints[0].timestamp, 12);
@@ -146,4 +146,36 @@ test("关联视频被规范化：非法关系回退、缺字段过滤、可导�
   const markdown = summaryDocumentToMarkdown(document);
   assert.match(markdown, /## 关联视频/);
   assert.match(markdown, /- 【延伸】本视频把上次的检索策略推进到混合检索。（《RAG 入门》）/);
+});
+
+test("建议追问被规范化：去重、截断到 3 条，旧缓存没有时为空数组", () => {
+  const document = parseSummaryResponse(
+    JSON.stringify({
+      videoType: "tutorial",
+      thesis: "本视频讲解混合检索。",
+      keyPoints: [],
+      chapters: [],
+      extras: null,
+      suggestedQuestions: [
+        "混合检索和纯向量检索差在哪？",
+        "混合检索和纯向量检索差在哪",
+        { question: "rerank 放在哪一步？" },
+        "第四条应被截掉",
+        "",
+      ],
+    }),
+    { cues }
+  );
+
+  assert.deepEqual(document.suggestedQuestions, [
+    "混合检索和纯向量检索差在哪？",
+    "rerank 放在哪一步？",
+    "第四条应被截掉",
+  ]);
+
+  const legacy = parseSummaryResponse(
+    JSON.stringify({ videoType: "general", thesis: "t", keyPoints: [], chapters: [], extras: null }),
+    { cues }
+  );
+  assert.deepEqual(legacy.suggestedQuestions, []);
 });

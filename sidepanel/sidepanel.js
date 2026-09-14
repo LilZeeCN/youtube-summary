@@ -420,10 +420,28 @@ function stopFollow() {
 
 /* ---------------- 总结页 ---------------- */
 
+// 对话页的一键提问：首条是与播放位置相关的工具型问题，其余按总结个性化生成。
+const DEFAULT_CHAT_QUESTIONS = [
+  "用更简单的话解释整个视频",
+  "列出视频提到的工具/概念",
+  "给我出 3 道检验理解的问题",
+];
+
+function renderChatSuggestions() {
+  const quick = $("#chat-quick");
+  if (!quick) return;
+  const dynamic = (state.summary && state.summary.suggestedQuestions) || [];
+  const questions = ["这一段在讲什么？", ...(dynamic.length ? dynamic : DEFAULT_CHAT_QUESTIONS)];
+  quick.innerHTML = questions
+    .map((question) => `<button class="chip" type="button">${escapeHtmlText(question)}</button>`)
+    .join("");
+}
+
 function renderSummaryState() {
   const placeholder = $("#sum-placeholder");
   const md = $("#sum-md");
   const actions = $("#sum-actions");
+  renderChatSuggestions();
   if (state.summary) {
     if (state.summaryMode === "deep" && !state.deepRead) state.summaryMode = "summary";
     placeholder.classList.add("hidden");

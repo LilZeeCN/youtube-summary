@@ -1,6 +1,6 @@
 import { formatTime, parseTimestamp } from "./subtitles.js";
 
-export const SUMMARY_DOCUMENT_VERSION = 4;
+export const SUMMARY_DOCUMENT_VERSION = 5;
 
 const VIDEO_TYPES = new Set(["tutorial", "interview", "review", "lecture", "news", "general"]);
 const CONNECTION_RELATIONS = new Set(["印证", "对比", "延伸", "矛盾"]);
@@ -89,6 +89,27 @@ function normalizeConnections(value) {
     .filter((item) => item.videoId && item.text);
 }
 
+function normalizeSuggestedQuestions(value) {
+  if (!Array.isArray(value)) return [];
+  const seen = new Set();
+  return value
+    .map((item) => cleanText(typeof item === "string" ? item : item?.question).slice(0, 60))
+    .filter((question) => {
+      if (!question) return false;
+      const key = canonicalQuestion(question);
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    })
+    .slice(0, 3);
+}
+
+function canonicalQuestion(text) {
+  return String(text || "")
+    .toLowerCase()
+    .replace(/[\s\p{P}\p{S}]/gu, "");
+}
+
 function normalizeObject(value, cues) {
   const keyPoints = Array.isArray(value.keyPoints)
     ? value.keyPoints
@@ -125,6 +146,7 @@ function normalizeObject(value, cues) {
     extras: normalizeExtras(value.extras),
     selfTest: normalizeSelfTest(value.selfTest, cues),
     connections: normalizeConnections(value.connections),
+    suggestedQuestions: normalizeSuggestedQuestions(value.suggestedQuestions),
   };
 }
 

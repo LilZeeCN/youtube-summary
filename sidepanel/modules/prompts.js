@@ -15,6 +15,9 @@ const SUMMARY_JSON_SCHEMA = `{
   ],
   "connections": [
     { "videoId": "用户记忆中给出的视频ID，原样照抄", "videoTitle": "该视频原标题", "relation": "印证 | 对比 | 延伸 | 矛盾", "text": "一句话说明两个视频在这个观点上如何相似或不同" }
+  ],
+  "suggestedQuestions": [
+    "针对本视频内容的具体追问（3 条，见规则）"
   ]
 }`;
 
@@ -31,10 +34,16 @@ const MEMORY_RULES = `若提供了【用户记忆】，请把它当作这位观�
 (b) 在 connections 中写跨视频关联——只允许引用记忆里真实给出的视频（videoId 原样照抄，不得改写或编造），relation 用“印证/对比/延伸/矛盾”，text 必须落到具体观点上，说明两个视频在这个观点上如何一致、相反或递进；
 (c) 没有实质关联时输出空数组，禁止为了凑数硬找关联；不要在 keyPoints 或 thesis 里复述记忆内容。`;
 
+const SUGGESTED_QUESTIONS_RULES = `suggestedQuestions 写 3 条“用户看完总结后最可能想追问的问题”，作为对话页的一键提问：
+(a) 必须落到本视频的具体内容——点名视频里真实出现的概念、工具、人物或结论，禁止“这个视频讲了什么”这类看总结就能回答的空泛问题；
+(b) 按内容类型选题——教程问步骤条件/易错点，访谈问嘉宾观点的理由，评测问结论是否适合自己，课程问概念间的关系，新闻问后续影响；
+(c) 若提供了用户记忆，其中一条应利用记忆（如请对比用户看过的某个视频、或在用户已知基础上往深问）；
+(d) 口吻是观众自己会问的短句，每条不超过 22 个字。`;
+
 export function summarySystemPrompt(videoType = "general", extraSpec = {}, hasMemory = false) {
   const extraTitle = extraSpec.title || "值得记住";
   const extraGuidance = extraSpec.guidance || "补充主干总结之外最值得保留的信息，避免重复。";
-  const thesisHint = extraSpec.thesisHint ? `\n10. ${extraSpec.thesisHint}` : "";
+  const thesisHint = extraSpec.thesisHint ? `\n11. ${extraSpec.thesisHint}` : "";
   const pointHint = extraSpec.pointHint || "覆盖视频主干";
   const memoryRules = hasMemory ? `\n11. ${MEMORY_RULES}` : "";
   return `你是一位专业的视频内容分析师。用户会给你一份带时间戳的视频字幕，请用简体中文输出可以被程序读取的结构化总结。
@@ -49,7 +58,8 @@ ${SUMMARY_JSON_SCHEMA}
 6. 提炼观点与结论，不要逐句复述字幕。${CONCRETENESS_RULES}
 7. 如果提供了视频描述，其中常含 UP主自己写的章节时间表与专有名词规范写法：划分章节时优先参考官方章节，术语写法优先采用描述中的规范名称。
 8. 当前预判的视频类型是 ${videoType}。如字幕明确显示类型不同，可修正 videoType；但 extras.title 必须写“${extraTitle}”，内容要求：${extraGuidance}
-9. keyPoints 保留 5~8 条，${pointHint}；chapters 按内容演进划分 3~8 章。${CHAPTER_LENGTH_RULES}内容不足时宁可减少数量，也不要凑数。${SELF_TEST_RULES}${thesisHint}${memoryRules}`;
+9. keyPoints 保留 5~8 条，${pointHint}；chapters 按内容演进划分 3~8 章。${CHAPTER_LENGTH_RULES}内容不足时宁可减少数量，也不要凑数。${SELF_TEST_RULES}
+10. ${SUGGESTED_QUESTIONS_RULES}${thesisHint}${memoryRules}`;
 }
 
 // 描述是免费的准确率来源，但要防两点：太长（截断）和与字幕冲突（以字幕为准）
@@ -119,7 +129,8 @@ ${SUMMARY_JSON_SCHEMA}
 时间戳必须来自所提供的摘录，绝不编造。章节按内容逻辑合并或拆分，时长可由相邻章节时间戳估算；${CHAPTER_LENGTH_RULES}${CONCRETENESS_RULES}
 汇总前先检查各部分是否存在同一术语的不同拼写或语义矛盾；严格按照规范术语表统一术语，并根据视频标题和上下文消解明显冲突。不确定时使用审慎表述，不要自行补充事实。
 预判视频类型是 ${videoType}；如内容证据明确可修正。extras.title 必须写“${extraTitle}”，内容要求：${extraGuidance}${thesisHint}
-${SELF_TEST_RULES}${memoryRules}`;
+${SELF_TEST_RULES}
+${SUGGESTED_QUESTIONS_RULES}${memoryRules}`;
 }
 
 export function reduceUserPrompt(partsText, videoTitle, terminologyGuide, videoType = "general", memoryBlock = "") {

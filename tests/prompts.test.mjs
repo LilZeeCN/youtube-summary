@@ -24,8 +24,17 @@ test("summary prompts require self-test questions, concreteness and adaptive cha
     assert.match(prompt, /selfTest/);
     assert.match(prompt, /自测|检验理解/);
     assert.match(prompt, /章节摘要的长度与章节时长匹配|时长匹配/);
+    assert.match(prompt, /suggestedQuestions/);
+    assert.match(prompt, /每条不超过 22 个字/);
   }
   assert.match(system, /空泛表述/);
+});
+
+test("建议追问要求落到具体内容并利用记忆与内容类型", () => {
+  const system = prompts.summarySystemPrompt("review", {}, true);
+  assert.match(system, /点名视频里真实出现的概念/);
+  assert.match(system, /按内容类型选题/);
+  assert.match(system, /其中一条应利用记忆/);
 });
 
 test("type-specific guidance shapes thesis, key points and extras", () => {
