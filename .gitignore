@@ -1,0 +1,11 @@
+# Build artifacts
+build/
+
+# Local agent config
+.zcode/
+
+# OS
+.DS_Store
+
+# Node
+node_modules/

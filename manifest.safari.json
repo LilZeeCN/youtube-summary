@@ -1,0 +1,45 @@
+{
+  "manifest_version": 3,
+  "name": "视频总结助手 · YouTube & B站 AI Summary",
+  "short_name": "视频总结助手",
+  "version": "1.7.0",
+  "description": "一键提取 YouTube / B站 视频字幕，AI 生成中文总结，支持追问对话、字幕点击跳转、结构化思维导图。",
+  "permissions": ["storage", "unlimitedStorage", "scripting"],
+  "host_permissions": [
+    "https://www.youtube.com/*",
+    "https://*/*",
+    "http://*/*"
+  ],
+  "background": {
+    "service_worker": "background/service-worker.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://www.youtube.com/*"],
+      "js": ["content/youtube-caption-cache.js", "content/page-bridge.js"],
+      "run_at": "document_start",
+      "world": "MAIN"
+    },
+    {
+      "matches": ["https://www.bilibili.com/*"],
+      "js": ["content/bili-bridge.js"],
+      "run_at": "document_start",
+      "world": "MAIN"
+    },
+    {
+      "matches": ["https://www.youtube.com/*", "https://www.bilibili.com/*"],
+      "js": ["content/youtube-caption-cache.js", "content/bili-provenance.js", "content/content.js"],
+      "run_at": "document_idle",
+      "world": "ISOLATED"
+    }
+  ],
+  "action": {
+    "default_title": "打开视频总结助手"
+  },
+  "icons": {
+    "16": "icons/icon16.png",
+    "32": "icons/icon32.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  }
+}

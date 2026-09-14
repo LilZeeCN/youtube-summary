@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>视频总结助手</title>
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="visual-refresh.css" />
+  <link rel="stylesheet" href="theme-light.css" />
+</head>
+<body>
+  <div id="app">
+    <header class="app-header">
+      <div class="brand">
+        <span class="brand-logo">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none">
+            <path d="M9 6.5v11l9-5.5-9-5.5z" fill="#fff"/>
+          </svg>
+        </span>
+        <span class="brand-name">视频总结助手</span>
+      </div>
+      <select class="model-select" id="model-select" title="当前使用的模型配置，点击切换"></select>
+      <div class="video-chip" id="video-chip" title="">
+        <span class="dot" id="chip-dot"></span>
+        <span class="chip-text" id="chip-text">正在检测视频…</span>
+      </div>
+      <button class="icon-btn theme-toggle" id="btn-theme" type="button" title="切换亮色 / 暗色主题">
+        <svg class="icon-sun" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2.2M12 19.3v2.2M4.3 4.3l1.6 1.6M18.1 18.1l1.6 1.6M2.5 12h2.2M19.3 12h2.2M4.3 19.7l1.6-1.6M18.1 5.9l1.6-1.6"/></svg>
+        <svg class="icon-moon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+      </button>
+    </header>
+
+    <nav class="tabs" id="tabs">
+      <button class="tab active" data-tab="summary" type="button">
+        <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9L12 3z"/><path d="M19 15l.9 2.4L22 18l-2.1.6L19 21l-.9-2.4L16 18l2.1-.6L19 15z"/></svg>
+        <span>总结</span>
+      </button>
+      <button class="tab" data-tab="chat" type="button">
+        <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a8 8 0 0 1-8 8H4.5l1.4-3.2A8 8 0 1 1 21 12z"/></svg>
+        <span>对话</span>
+      </button>
+      <button class="tab" data-tab="subs" type="button">
+        <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="3" y="5" width="18" height="14" rx="3"/><path d="M7 10.5h4M13 10.5h4M7 14h10"/></svg>
+        <span>字幕</span>
+      </button>
+      <button class="tab" data-tab="map" type="button">
+        <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="5" cy="12" r="2.2"/><circle cx="12" cy="5.5" r="2.2"/><circle cx="12" cy="18.5" r="2.2"/><circle cx="19.5" cy="12" r="2.2"/><path d="M7.2 12h2.3m0 0V7.5h2m-2 2V16m0-1h2.5"/></svg>
+        <span>导图</span>
+      </button>
+      <button class="tab" data-tab="history" type="button">
+        <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3.2 2"/></svg>
+        <span>历史</span>
+      </button>
+      <button class="tab" data-tab="settings" type="button">
+        <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.9 2.9l-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.6 1.7 1.7 0 0 0-1.9.3l-.1.1a2 2 0 1 1-2.9-2.9l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.6-1.1 1.7 1.7 0 0 0-.3-1.9l-.1-.1a2 2 0 1 1 2.9-2.9l.1.1a1.7 1.7 0 0 0 1.9.3h.1a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.9-.3l.1-.1a2 2 0 1 1 2.9 2.9l-.1.1a1.7 1.7 0 0 0-.3 1.9v.1a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
+        <span>设置</span>
+      </button>
+    </nav>
+
+    <main class="content">
+      <!-- 总结 -->
+      <section class="tab-page active" id="tab-summary">
+        <div class="summary-progress hidden" id="sum-stage" role="status" aria-live="polite">
+          <div class="summary-progress-head">
+            <span class="thinking-mark" aria-hidden="true"><i></i><i></i><i></i></span>
+            <div class="summary-progress-copy">
+              <strong id="sum-stage-text">正在总结…</strong>
+              <span id="sum-elapsed">已运行 0:00</span>
+            </div>
+          </div>
+          <div class="term-preview hidden" id="sum-stage-detail-wrap">
+            <span>处理详情</span>
+            <code id="sum-stage-detail"></code>
+          </div>
+        </div>
+        <div class="quality-banner hidden" id="sum-quality" role="alert"></div>
+        <div class="summary-mode-switch hidden" id="sum-mode-switch" role="tablist" aria-label="阅读模式">
+          <button class="active" data-summary-mode="summary" role="tab" type="button">概览</button>
+          <button data-summary-mode="deep" role="tab" type="button">精读</button>
+        </div>
+        <div class="result-actions hidden" id="sum-actions">
+          <span class="meta" id="sum-meta"></span>
+          <span class="spacer"></span>
+          <button class="btn ghost sm" id="btn-copy-summary" type="button">复制</button>
+          <button class="btn deep-read sm" id="btn-deep-read" type="button">生成精读</button>
+          <button class="btn ghost sm" id="btn-regen" type="button">重新总结</button>
+        </div>
+        <div class="empty-state" id="sum-placeholder">
+          <svg viewBox="0 0 48 48" width="52" height="52" fill="none">
+            <rect x="4" y="10" width="40" height="28" rx="6" fill="url(#emptyGrad)"/>
+            <path d="M20 19v10l8.5-5L20 19z" fill="#fff"/>
+            <path d="M38 6l1.2 3.3L42.5 10.5l-3.3 1.2L38 15l-1.2-3.3-3.3-1.2 3.3-1.2L38 6z" fill="#b14dff"/>
+            <defs><linearGradient id="emptyGrad" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#ff4d6d"/><stop offset="1" stop-color="#b14dff"/></linearGradient></defs>
+          </svg>
+          <h3>快速掌握这个视频</h3>
+          <p id="sum-placeholder-text">提取字幕并让 AI 生成一句话总结、关键要点与章节摘要</p>
+          <button class="btn primary lg" id="btn-summarize" type="button">
+            总结本视频
+          </button>
+        </div>
+        <div class="md hidden" id="sum-md"></div>
+      </section>
+
+      <!-- 对话 -->
+      <section class="tab-page" id="tab-chat">
+        <div class="chat-list" id="chat-list"></div>
+        <div class="chat-foot">
+          <div class="chat-quick" id="chat-quick">
+            <button class="chip" type="button">这一段在讲什么？</button>
+            <button class="chip" type="button">用更简单的话解释整个视频</button>
+            <button class="chip" type="button">列出视频提到的工具/概念</button>
+            <button class="chip" type="button">给我出 3 道检验理解的问题</button>
+          </div>
+          <div class="chat-input">
+            <textarea id="chat-textarea" rows="1" placeholder="关于这个视频，随便问…" ></textarea>
+            <button class="icon-btn accent" id="btn-chat-send" type="button" title="发送">
+              <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>
+            </button>
+            <button class="icon-btn hidden" id="btn-chat-stop" type="button" title="停止生成">
+              <svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- 字幕 -->
+      <section class="tab-page" id="tab-subs">
+        <div class="subs-toolbar">
+          <div class="track-select-wrap">
+            <select id="track-select" title="字幕语言/轨道"></select>
+            <svg class="track-select-chevron" viewBox="0 0 16 16" aria-hidden="true">
+              <path d="m4 6 4 4 4-4" />
+            </svg>
+          </div>
+          <div class="search-box">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+            <input id="subs-search" type="text" placeholder="搜索字幕…" />
+          </div>
+          <button class="icon-btn active" id="btn-follow" type="button" title="跟随播放高亮">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M6 4l14 8-14 8V4z"/></svg>
+          </button>
+        </div>
+        <div class="subs-source hidden" id="subs-source"></div>
+        <div id="subs-list" class="subs-list"></div>
+      </section>
+
+      <!-- 导图 -->
+      <section class="tab-page" id="tab-map">
+        <div class="stage-bar hidden" id="map-stage">
+          <span class="spinner"></span>
+          <span id="map-stage-text">正在生成思维导图…</span>
+        </div>
+        <div class="result-actions hidden" id="map-actions">
+          <span class="meta">点击节点可跳转 · 双指滑动平移 · 捏合缩放</span>
+          <span class="spacer"></span>
+          <button class="btn ghost sm" id="btn-map-expand" type="button">展开</button>
+          <button class="btn ghost sm" id="btn-map-collapse" type="button">收起</button>
+          <button class="btn ghost sm" id="btn-map-fit" type="button">适应</button>
+          <button class="btn ghost sm" id="btn-map-regen" type="button">重新生成</button>
+        </div>
+        <div class="empty-state" id="map-placeholder">
+          <svg viewBox="0 0 48 48" width="52" height="52" fill="none">
+            <circle cx="8" cy="24" r="5" fill="#ff4d6d"/>
+            <circle cx="24" cy="10" r="5" fill="#b14dff"/>
+            <circle cx="24" cy="38" r="5" fill="#b14dff"/>
+            <circle cx="40" cy="24" r="5" fill="#6e8cff"/>
+            <path d="M13 22.5 19.5 12M13 25.5 19.5 36M29 24h6" stroke="#ffffff40" stroke-width="2"/>
+          </svg>
+          <h3>结构化思维导图</h3>
+          <p>把视频内容整理成可视化的知识结构，点击节点直达对应片段</p>
+          <button class="btn primary lg" id="btn-gen-map" type="button">生成思维导图</button>
+        </div>
+        <div class="map-wrap hidden" id="map-wrap">
+          <svg id="map-svg"></svg>
+        </div>
+      </section>
+
+      <!-- 历史 -->
+      <section class="tab-page" id="tab-history">
+        <div class="history-toolbar">
+          <div class="search-box">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+            <input id="history-search" type="text" placeholder="搜索标题或视频 ID…" />
+          </div>
+        </div>
+        <div id="history-list" class="history-list"></div>
+      </section>
+
+      <!-- 设置 -->
+      <section class="tab-page" id="tab-settings">
+        <div class="settings-block">
+          <div class="settings-block-head">
+            <span class="block-title">模型配置</span>
+            <button class="btn ghost sm" id="btn-add-profile" type="button">＋ 新增</button>
+          </div>
+          <div class="profile-list" id="profile-list"></div>
+          <form class="profile-editor hidden" id="profile-form" autocomplete="off">
+            <input type="hidden" id="prof-id" value="" />
+            <label class="field">
+              <span class="field-label">模型来源 <i>*</i></span>
+              <select id="prof-provider">
+                <option value="openai">OpenAI 兼容接口</option>
+                <option value="antigravity">Antigravity（本机订阅）</option>
+              </select>
+            </label>
+            <label class="field">
+              <span class="field-label">配置名称</span>
+              <input id="prof-name" type="text" spellcheck="false" placeholder="如：DeepSeek · 便宜快速" />
+              <span class="field-hint">仅用于列表展示，留空则用模型名</span>
+            </label>
+            <div id="openai-profile-fields">
+              <label class="field">
+                <span class="field-label">API 地址 <i>*</i></span>
+                <input id="prof-url" type="text" spellcheck="false" placeholder="https://api.deepseek.com/v1" />
+                <span class="field-hint">兼容 OpenAI 格式：填到 /v1 即可，自动补全 /chat/completions</span>
+              </label>
+              <label class="field">
+                <span class="field-label">API Key</span>
+                <div class="key-row">
+                  <input id="prof-key" type="password" spellcheck="false" placeholder="sk-…" />
+                  <button class="icon-btn" type="button" id="btn-eye" title="显示/隐藏">
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
+                  </button>
+                </div>
+                <span class="field-hint">仅保存在本地浏览器；本地服务（Ollama/LM Studio）可留空</span>
+              </label>
+            </div>
+            <div class="antigravity-connect hidden" id="antigravity-profile-fields">
+              <div class="antigravity-status-row">
+                <span class="antigravity-dot" id="antigravity-dot"></span>
+                <span id="antigravity-status">等待连接本机 Antigravity…</span>
+              </div>
+              <p>通过官方 <code>agy</code> 使用系统钥匙串中的登录状态，插件不会读取或保存令牌。</p>
+              <button class="btn ghost sm" id="btn-antigravity-connect" type="button">连接并读取模型</button>
+            </div>
+            <label class="field">
+              <span class="field-label">模型 <i>*</i></span>
+              <input id="prof-model" type="text" spellcheck="false" placeholder="deepseek-chat / gpt-4o-mini / qwen2.5 …" />
+              <select class="hidden" id="prof-model-select">
+                <option value="">连接后选择 Gemini 模型</option>
+              </select>
+            </label>
+            <div class="settings-actions">
+              <button class="btn ghost" id="btn-test" type="button">测试连接</button>
+              <button class="btn primary" type="submit">保存</button>
+              <button class="btn ghost" id="btn-profile-cancel" type="button">取消</button>
+            </div>
+            <div class="test-result hidden" id="test-result"></div>
+          </form>
+        </div>
+        <div class="settings-block">
+          <div class="settings-block-head">
+            <span class="block-title">通用</span>
+          </div>
+          <label class="field">
+            <span class="field-label">外观</span>
+            <select id="set-theme">
+              <option value="auto">跟随系统</option>
+              <option value="light">亮色</option>
+              <option value="dark">暗色</option>
+            </select>
+            <span class="field-hint">顶栏的太阳/月亮按钮可随时快速切换</span>
+          </label>
+          <label class="field check-row">
+            <input id="set-auto" type="checkbox" />
+            <span>打开侧边栏时自动开始总结</span>
+          </label>
+        </div>
+        <div class="settings-notes">
+          <p class="note-title">连接示例</p>
+          <p>OpenAI：<code>https://api.openai.com/v1</code> + <code>gpt-4o-mini</code></p>
+          <p>DeepSeek：<code>https://api.deepseek.com/v1</code> + <code>deepseek-chat</code></p>
+          <p>Kimi：<code>https://api.moonshot.cn/v1</code> + <code>moonshot-v1-8k</code></p>
+          <p>Ollama 本地：<code>http://localhost:11434/v1</code> + <code>qwen2.5</code>（Key 留空）</p>
+          <p>Antigravity：首次运行 <code>connector/install.command</code>，再选择本机订阅和 Gemini 模型</p>
+        </div>
+      </section>
+    </main>
+
+    <div id="toast-root"></div>
+  </div>
+  <script type="module" src="sidepanel.js"></script>
+</body>
+</html>

@@ -1,0 +1,336 @@
+/* 视频总结助手 · 亮色主题。挂载在 <html data-theme="light"> 上，暗色（默认）完全不受影响。
+   加载顺序：styles.css → visual-refresh.css → 本文件。
+   auto 偏好在 JS 运行前先用 media query 命中变量，避免打开时闪暗色；
+   组件级覆盖只在显式 data-theme="light" 下生效，首帧不可见的悬停/浮层即使晚一帧也无感。 */
+
+:root {
+  color-scheme: dark;
+}
+
+/* ============ 变量（auto 与显式 light 共用同一套） ============ */
+
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) {
+    color-scheme: light;
+    --bg: oklch(0.982 0.004 285);
+    --bg2: oklch(0.955 0.005 285);
+    --card: oklch(0.998 0.002 285);
+    --card2: oklch(0.94 0.006 285);
+    --border: oklch(0.28 0.02 285 / 0.12);
+    --border-strong: oklch(0.28 0.02 285 / 0.22);
+    --text: oklch(0.24 0.02 285);
+    --text2: oklch(0.43 0.02 285);
+    --text3: oklch(0.5 0.02 285);
+    --accent1: oklch(0.54 0.235 310);
+    --accent2: oklch(0.54 0.235 310);
+    --accent: oklch(0.54 0.235 310);
+    --accent-soft: oklch(0.54 0.235 310 / 0.1);
+    --ok: oklch(0.52 0.15 152);
+    --warn: oklch(0.55 0.14 85);
+    --err: oklch(0.52 0.2 25);
+  }
+}
+
+:root[data-theme="light"] {
+  color-scheme: light;
+  --bg: oklch(0.982 0.004 285);
+  --bg2: oklch(0.955 0.005 285);
+  --card: oklch(0.998 0.002 285);
+  --card2: oklch(0.94 0.006 285);
+  --border: oklch(0.28 0.02 285 / 0.12);
+  --border-strong: oklch(0.28 0.02 285 / 0.22);
+  --text: oklch(0.24 0.02 285);
+  --text2: oklch(0.43 0.02 285);
+  --text3: oklch(0.5 0.02 285);
+  --accent1: oklch(0.54 0.235 310);
+  --accent2: oklch(0.54 0.235 310);
+  --accent: oklch(0.54 0.235 310);
+  --accent-soft: oklch(0.54 0.235 310 / 0.1);
+  --ok: oklch(0.52 0.15 152);
+  --warn: oklch(0.55 0.14 85);
+  --err: oklch(0.52 0.2 25);
+}
+
+/* ============ 通用（覆盖两份样式表里的暗色硬编码） ============ */
+
+[data-theme="light"] ::-webkit-scrollbar-thumb {
+  background: oklch(0.28 0.02 285 / 0.22);
+}
+[data-theme="light"] ::-webkit-scrollbar-thumb:hover {
+  background: oklch(0.28 0.02 285 / 0.38);
+}
+
+[data-theme="light"] #app {
+  background:
+    radial-gradient(400px 240px at 104% -8%, oklch(0.54 0.235 310 / 0.06), transparent 70%),
+    var(--bg);
+}
+
+[data-theme="light"] .brand-logo {
+  box-shadow: 0 5px 19px oklch(0.54 0.235 310 / 0.22);
+}
+
+/* 主题切换按钮：暗色显示太阳（点击切亮），亮色显示月亮 */
+.theme-toggle .icon-moon {
+  display: none;
+}
+[data-theme="light"] .theme-toggle .icon-sun {
+  display: none;
+}
+[data-theme="light"] .theme-toggle .icon-moon {
+  display: block;
+}
+
+[data-theme="light"] .model-select {
+  background: oklch(0.28 0.02 285 / 0.045);
+}
+
+[data-theme="light"] .tab:hover {
+  background: oklch(0.25 0.015 285 / 0.05);
+}
+[data-theme="light"] .tab.active {
+  background: oklch(0.25 0.015 285 / 0.07);
+}
+
+/* 按钮：主按钮/强调按钮在紫色底上保持白字（暗色里白字来自 --text，亮色需显式声明） */
+[data-theme="light"] .btn:hover,
+[data-theme="light"] .btn.ghost:hover {
+  background: oklch(0.25 0.015 285 / 0.05);
+}
+[data-theme="light"] .btn.primary {
+  color: #fff;
+  box-shadow: 0 8px 22px oklch(0.54 0.235 310 / 0.25);
+}
+[data-theme="light"] .btn.primary:hover {
+  background: oklch(0.48 0.22 310);
+}
+[data-theme="light"] .icon-btn:hover {
+  background: oklch(0.25 0.015 285 / 0.05);
+}
+[data-theme="light"] .icon-btn.accent {
+  color: #fff;
+}
+
+[data-theme="light"] .spinner {
+  border-color: oklch(0.28 0.02 285 / 0.2);
+}
+
+[data-theme="light"] .thinking-mark {
+  background: oklch(0.25 0.015 285 / 0.05);
+}
+
+[data-theme="light"] .summary-mode-switch {
+  background: oklch(0.25 0.015 285 / 0.05);
+}
+
+/* ============ Markdown / 时间戳 ============ */
+
+[data-theme="light"] .md code {
+  background: oklch(0.25 0.015 285 / 0.07);
+}
+
+[data-theme="light"] .md th {
+  background: oklch(0.25 0.015 285 / 0.05);
+}
+[data-theme="light"] .md tbody tr:hover td {
+  background: oklch(0.25 0.015 285 / 0.03);
+}
+
+[data-theme="light"] button.ts {
+  background: oklch(0.25 0.015 285 / 0.06);
+}
+[data-theme="light"] button.ts:hover {
+  background: oklch(0.25 0.015 285 / 0.12);
+}
+
+/* ============ 对话页 ============ */
+
+[data-theme="light"] .msg.user .bubble {
+  color: var(--text);
+  background: oklch(0.54 0.235 310 / 0.1);
+}
+[data-theme="light"] .chat-empty-mark {
+  background: oklch(0.25 0.015 285 / 0.05);
+}
+[data-theme="light"] .chip:hover {
+  background: oklch(0.25 0.015 285 / 0.05);
+}
+
+/* ============ 字幕页 ============ */
+
+[data-theme="light"] .sub-row:hover {
+  background: oklch(0.25 0.015 285 / 0.05);
+}
+[data-theme="light"] .sub-row.active {
+  background: oklch(0.25 0.015 285 / 0.075);
+}
+[data-theme="light"] .sub-row .ts {
+  color: oklch(0.48 0.19 15);
+}
+[data-theme="light"] .sub-row mark {
+  background: oklch(0.54 0.235 310 / 0.22);
+  color: var(--text);
+}
+[data-theme="light"] .subs-source.mismatch {
+  border-color: oklch(0.52 0.2 25 / 0.45);
+  background: oklch(0.52 0.2 25 / 0.06);
+  color: oklch(0.5 0.2 25);
+}
+
+/* ============ 导图页 ============ */
+
+[data-theme="light"] .map-placeholder path {
+  stroke: oklch(0.28 0.02 285 / 0.3);
+}
+
+[data-theme="light"] .map-wrap {
+  background:
+    linear-gradient(90deg, oklch(0.28 0.02 285 / 0.06) 1px, transparent 1px),
+    linear-gradient(oklch(0.28 0.02 285 / 0.06) 1px, transparent 1px),
+    var(--card);
+  background-size: 21px 21px;
+}
+
+[data-theme="light"] .mm-edges path {
+  stroke: oklch(0.28 0.02 285 / 0.25);
+}
+
+[data-theme="light"] .mm-node rect {
+  fill: var(--card);
+  stroke: oklch(0.28 0.02 285 / 0.14);
+}
+
+/* 根节点保留品牌渐变（与暗色一致）：上面通用 rect 规则特异性相同但加载更晚，必须显式赢回来 */
+[data-theme="light"] .mm-node.d0 rect {
+  fill: url(#mmGrad);
+  stroke: none;
+}
+[data-theme="light"] .mm-node.d0 .mm-label {
+  fill: #fff;
+}
+
+[data-theme="light"] .mm-node.d1 rect {
+  fill: oklch(0.54 0.235 310 / 0.1);
+  stroke: oklch(0.54 0.235 310 / 0.45);
+}
+
+[data-theme="light"] .mm-node.has-t rect {
+  stroke: oklch(0.55 0.2 15 / 0.5);
+}
+
+[data-theme="light"] .mm-label {
+  fill: var(--text);
+}
+
+[data-theme="light"] .mm-time {
+  fill: oklch(0.5 0.17 15);
+}
+
+[data-theme="light"] .mm-toggle circle {
+  fill: var(--card2);
+  stroke: oklch(0.28 0.02 285 / 0.25);
+}
+
+[data-theme="light"] .mm-toggle.closed circle {
+  fill: oklch(0.54 0.235 310 / 0.18);
+  stroke: oklch(0.54 0.235 310 / 0.55);
+}
+
+/* ============ 设置页 ============ */
+
+[data-theme="light"] .icon-btn.active {
+  border-color: oklch(0.54 0.235 310 / 0.45);
+}
+
+[data-theme="light"] .profile-row:hover {
+  background: oklch(0.25 0.015 285 / 0.05);
+}
+[data-theme="light"] .profile-row.active {
+  background: oklch(0.54 0.235 310 / 0.08);
+}
+
+[data-theme="light"] .test-result.ok {
+  background: oklch(0.52 0.15 152 / 0.08);
+  border-color: oklch(0.52 0.15 152 / 0.35);
+  color: oklch(0.42 0.14 152);
+}
+[data-theme="light"] .test-result.err {
+  background: oklch(0.52 0.2 25 / 0.06);
+  border-color: oklch(0.52 0.2 25 / 0.3);
+  color: oklch(0.48 0.19 25);
+}
+
+/* ============ 结构化总结 ============ */
+
+[data-theme="light"] .summary-eyebrow span:first-child {
+  background: oklch(0.25 0.015 285 / 0.05);
+}
+[data-theme="light"] .summary-doc button.ts:hover {
+  background: oklch(0.25 0.015 285 / 0.07);
+}
+[data-theme="light"] .summary-evidence {
+  background: oklch(0.25 0.015 285 / 0.035);
+}
+
+/* ============ 精读关系图 ============ */
+
+[data-theme="light"] .relation-diagram {
+  background:
+    linear-gradient(90deg, oklch(0.28 0.02 285 / 0.05) 1px, transparent 1px),
+    linear-gradient(oklch(0.28 0.02 285 / 0.05) 1px, transparent 1px),
+    oklch(0.965 0.005 285);
+  background-size: 20px 20px;
+}
+
+[data-theme="light"] .md .relation-diagram figcaption {
+  background: oklch(0.25 0.015 285 / 0.04);
+}
+[data-theme="light"] .relation-diagram figcaption span {
+  box-shadow: 0 0 8px oklch(0.54 0.235 310 / 0.4);
+}
+
+[data-theme="light"] .relation-edge {
+  stroke: oklch(0.4 0.02 285 / 0.5);
+}
+[data-theme="light"] .relation-diagram marker path {
+  fill: oklch(0.4 0.02 285 / 0.65);
+}
+[data-theme="light"] .relation-edge-label rect {
+  fill: oklch(0.998 0.002 285 / 0.97);
+  stroke: oklch(0.28 0.02 285 / 0.14);
+}
+[data-theme="light"] .relation-node rect {
+  fill: oklch(1 0 0 / 0.97);
+  stroke: oklch(0.28 0.02 285 / 0.16);
+}
+[data-theme="light"] .relation-node-source rect {
+  fill: oklch(0.54 0.235 310 / 0.1);
+  stroke: oklch(0.54 0.235 310 / 0.5);
+}
+[data-theme="light"] .relation-node-decision rect {
+  fill: oklch(0.54 0.235 310 / 0.06);
+  stroke: oklch(0.54 0.235 310 / 0.28);
+}
+[data-theme="light"] .relation-node-outcome rect {
+  fill: oklch(0.52 0.15 152 / 0.07);
+  stroke: oklch(0.52 0.15 152 / 0.3);
+}
+[data-theme="light"] .relation-diagram-loading {
+  background: oklch(0.25 0.015 285 / 0.035);
+}
+[data-theme="light"] .relation-diagram-loading span {
+  box-shadow: 0 0 10px oklch(0.54 0.235 310 / 0.5);
+}
+
+/* ============ Toast ============ */
+
+[data-theme="light"] .toast {
+  background: oklch(0.998 0.002 285 / 0.98);
+  box-shadow: 0 8px 25px oklch(0.28 0.02 285 / 0.18);
+}
+[data-theme="light"] .toast.success {
+  color: oklch(0.42 0.14 152);
+}
+[data-theme="light"] .toast.error {
+  color: oklch(0.48 0.19 25);
+}
