@@ -16,3 +16,18 @@ export function videoUrlFromId(videoId) {
 export function platformFromId(videoId) {
   return String(videoId || "").startsWith("BV") ? "bilibili" : "youtube";
 }
+
+// 把回答中的《视频标题》书名号引用变成可点击的 Markdown 链接（渲染层支持 [文本](url)）。
+// 只处理列表里真实存在的标题，流式半截标题不匹配时原样保留，后续 delta 会补全。
+export function linkifyVideoTitles(text, videos) {
+  let output = String(text || "");
+  for (const video of videos || []) {
+    const title = String(video && video.title || "").trim();
+    if (!title || !video.videoId) continue;
+    const quoted = `《${title}》`;
+    if (output.includes(quoted)) {
+      output = output.split(quoted).join(`[${quoted}](${videoUrlFromId(video.videoId)})`);
+    }
+  }
+  return output;
+}

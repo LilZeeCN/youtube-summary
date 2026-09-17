@@ -263,7 +263,10 @@ ${drafts}`;
 
 // —— 追问对话 ——
 
-export function chatSystemPrompt(videoTitle, hasFullSubs) {
+export function chatSystemPrompt(videoTitle, hasFullSubs, hasMemoryVideos = false) {
+  const memoryVideoRules = hasMemoryVideos
+    ? `\n7. 若上下文提供了「用户看过的相关视频」：回答涉及它们的观点时请直接引用，写成《视频标题》（与列表完全一致，会被渲染成可点击链接）；只允许引用列表中给出的视频，禁止编造标题；相关视频与当前视频观点的印证、分歧或递进都值得指出；引用相关视频时不要给它们加 [mm:ss] 时间戳（时间戳只属于当前视频）。`
+    : "";
   return `你是用户的视频学习助手。用户正在观看视频《${videoTitle}》，并会向你提问。
 
 要求：
@@ -272,12 +275,26 @@ export function chatSystemPrompt(videoTitle, hasFullSubs) {
 3. 用户提供的内容里包含「当前观看位置」，优先围绕该位置附近的内容解释。
 4. 如果问题完全超出视频与字幕范围，先说明字幕中没有相关内容，再给出你的常识性回答。
 5. 回答简洁、结构清晰，善用列表。
-6. 用户界面是窄边栏：优先用列表和短句，避免 4 列以上的宽表格；展示代码、层级树、对齐文本时必须放进 \`\`\` 代码块。`;
+6. 用户界面是窄边栏：优先用列表和短句，避免 4 列以上的宽表格；展示代码、层级树、对齐文本时必须放进 \`\`\` 代码块。${memoryVideoRules}`;
 }
 
-export function chatContextText({ summary, nearbyText, currentTime, profileDigest }) {
+export function chatContextText({ summary, nearbyText, currentTime, profileDigest, memoryVideos }) {
   const parts = [];
   if (profileDigest) parts.push(`【用户画像（来自长期记忆）】\n${profileDigest}`);
+  if (memoryVideos && memoryVideos.length) {
+    parts.push(
+      `【用户看过的相关视频（回答可引用，标题写成《…》）】\n${memoryVideos
+        .map(
+          (video) =>
+            `- 《${video.title}》：${video.thesis}${
+              video.keyPoints && video.keyPoints.length
+                ? `\n  要点：${video.keyPoints.slice(0, 5).join("；")}`
+                : ""
+            }`
+        )
+        .join("\n")}`
+    );
+  }
   if (summary) parts.push(`【视频总结】\n${summary}`);
   if (typeof currentTime === "number") {
     parts.push(`【用户当前观看位置】约 ${Math.floor(currentTime / 60)} 分 ${Math.floor(currentTime % 60)} 秒`);

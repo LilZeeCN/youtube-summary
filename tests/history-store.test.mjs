@@ -92,6 +92,7 @@ test("cacheSummaries 只返回总结条目的精简档案，供记忆检索使�
       data: {
         videoType: "tutorial",
         thesis: "检索增强生成流程",
+        keyPoints: [{ text: "向量检索是第一步。" }, { text: "重排提升精度。" }],
         chapters: [{ title: "向量检索" }, { title: "生成" }],
       },
     },
@@ -105,6 +106,8 @@ test("cacheSummaries 只返回总结条目的精简档案，供记忆检索使�
   assert.equal(summaries[0].videoType, "tutorial");
   assert.equal(summaries[0].thesis, "检索增强生成流程");
   assert.deepEqual(summaries[0].chapterTitles, ["向量检索", "生成"]);
+  assert.deepEqual(summaries[0].keyPoints, ["向量检索是第一步。", "重排提升精度。"]);
   assert.equal(summaries[1].videoType, "general");
   assert.equal(summaries[1].thesis, "");
+  assert.deepEqual(summaries[1].keyPoints, []);
 });

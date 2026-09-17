@@ -84,6 +84,26 @@ test("用户提示词在提供记忆时插入记忆块", () => {
   assert.doesNotMatch(plain, /【用户记忆/);
 });
 
+test("对话在提供相关视频时给出引用规则与上下文块", () => {
+  const sys = prompts.chatSystemPrompt("标题", false, true);
+  assert.match(sys, /用户看过的相关视频/);
+  assert.match(sys, /《视频标题》/);
+  assert.match(sys, /禁止编造标题/);
+  assert.match(sys, /时间戳只属于当前视频/);
+  assert.doesNotMatch(prompts.chatSystemPrompt("标题", false, false), /禁止编造标题/);
+
+  const ctx = prompts.chatContextText({
+    memoryVideos: [
+      { videoId: "rag1", title: "RAG 入门", thesis: "检索增强流程", keyPoints: ["向量检索是第一步。", "重排提升精度。"] },
+    ],
+  });
+  assert.match(ctx, /【用户看过的相关视频（回答可引用，标题写成《…》）】/);
+  assert.match(ctx, /- 《RAG 入门》：检索增强流程/);
+  assert.match(ctx, /要点：向量检索是第一步。；重排提升精度。/);
+  const empty = prompts.chatContextText({});
+  assert.doesNotMatch(empty, /相关视频/);
+});
+
 test("terminology prompts use the title and representative transcript", () => {
   const system = prompts.terminologySystemPrompt();
   const user = prompts.terminologyUserPrompt("PAGENT can use tools", "Pi Agent 入门");

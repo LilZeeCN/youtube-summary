@@ -27,13 +27,14 @@ import { renderSubtitleTrackSelect } from "./modules/subtitle-track-select.js";
 import { validateTimestamps } from "./modules/timestamp-validator.js";
 import { applyTheme, observeSystemTheme } from "./modules/theme.js";
 import { evaluateSummaryQuality } from "./modules/summary-quality.js";
-import { videoUrlFromId, platformFromId } from "./modules/video-link.js";
+import { videoUrlFromId, platformFromId, linkifyVideoTitles } from "./modules/video-link.js";
 import {
   loadMemory,
   deleteMemoryEntry,
   clearMemory,
   consolidateMemory,
   memoryProfileDigest,
+  retrieveChatVideos,
 } from "./modules/memory.js";
 
 const $ = (sel) => document.querySelector(sel);
@@ -784,7 +785,7 @@ function renderChat(scroll = true) {
           </svg>
         </span>
         <p class="chat-empty-title">从视频里继续追问</p>
-        <p class="chat-empty-copy">回答会参考字幕和当前播放位置，并附上可跳转的时间点</p>
+        <p class="chat-empty-copy">回答会参考字幕和当前播放位置，并附上可跳转的时间点；也会引用你看过的相关视频帮你对比观点</p>
       </div>`;
     return;
   }
@@ -825,12 +826,22 @@ async function sendChat(question) {
     const nearby = nearbyCues
       .map((c) => `[${subs.formatTime(c.start)}] ${c.text}`)
       .join("\n");
-    const sys = prompts.chatSystemPrompt(state.video.title);
+    // 记忆检索：按问题在观看档案里找相关视频，回答可引用其观点并点击跳回
+    const memoryVideos = await retrieveChatVideos({
+      settings: state.settings,
+      query: [state.video.title, state.summary && state.summary.thesis, question]
+        .filter(Boolean)
+        .join("\n"),
+      excludeVideoId: state.video.videoId,
+    });
+    const cite = (text) => linkifyVideoTitles(text, memoryVideos);
+    const sys = prompts.chatSystemPrompt(state.video.title, false, memoryVideos.length > 0);
     const ctx = prompts.chatContextText({
       summary: state.summary ? summaryDocumentToMarkdown(state.summary) : "",
       nearbyText: nearby,
       currentTime,
       profileDigest: await memoryProfileDigest({ settings: state.settings }),
+      memoryVideos,
     });
     const history = state.chat.slice(-11, -1); // 不含刚 push 的这条
     const messages = [
@@ -844,11 +855,13 @@ async function sendChat(question) {
       messages,
       signal: chatAbort.signal,
       onDelta: (full) => {
-        bubble.innerHTML = renderMarkdown(full);
+        bubble.innerHTML = renderMarkdown(cite(full));
         scrollChat();
       },
     });
-    state.chat.push({ role: "assistant", content: reply });
+    const cited = cite(reply);
+    state.chat.push({ role: "assistant", content: cited });
+    bubble.innerHTML = renderMarkdown(cited);
     await store.cacheSet(state.video.videoId, "chat", { data: state.chat, title: state.video.title });
     scrollChat(true);
   } catch (e) {

@@ -283,3 +283,14 @@ export async function memoryProfileDigest({ settings, maxFacts = 8 } = {}) {
   const memory = await loadMemory();
   return memory.facts.slice(0, maxFacts).map((fact) => `- ${fact.text}`).join("\n");
 }
+
+// 对话读取路径：按当前问题在观看档案里检索相关视频（含要点），供回答时引用
+export async function retrieveChatVideos({ settings, query, excludeVideoId = "", limit = 3 } = {}) {
+  if (!settings || settings.memoryEnabled === false) return [];
+  const videos = await cacheSummaries();
+  return rankRelatedVideos(query, videos, { excludeVideoId, limit })
+    .map(({ videoId, title, thesis }) => {
+      const full = videos.find((video) => video.videoId === videoId);
+      return { videoId, title, thesis, keyPoints: (full && full.keyPoints) || [] };
+    });
+}

@@ -236,6 +236,9 @@ export async function cacheSummaries() {
       chapterTitles: Array.isArray(data.chapters)
         ? data.chapters.map((chapter) => chapter && chapter.title).filter(Boolean)
         : [],
+      keyPoints: Array.isArray(data.keyPoints)
+        ? data.keyPoints.map((point) => point && point.text).filter(Boolean).slice(0, 8)
+        : [],
     });
   }
   return out.sort((a, b) => b.ts - a.ts);

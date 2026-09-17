@@ -36,6 +36,7 @@ const {
   loadMemory,
   clearMemory,
   deleteMemoryEntry,
+  retrieveChatVideos,
 } = await import("../sidepanel/modules/memory.js");
 
 test("tokenize 产出拉丁词与中文二元组", () => {
@@ -203,4 +204,45 @@ test("可以删除单条记忆或全部清空", async () => {
 
   const cleared = await clearMemory();
   assert.deepEqual(cleared.facts, []);
+});
+
+test("retrieveChatVideos 按问题检索相关视频并携带要点", async () => {
+  installStorageMock({
+    "cache:rag1:summary": {
+      videoId: "rag1",
+      kind: "summary",
+      ts: 100,
+      title: "RAG 入门",
+      data: {
+        videoType: "tutorial",
+        thesis: "检索增强生成流程",
+        keyPoints: [{ text: "向量检索是第一步。" }, { text: "重排提升精度。" }],
+        chapters: [{ title: "向量检索" }],
+      },
+    },
+    "cache:cook:summary": {
+      videoId: "cook",
+      kind: "summary",
+      ts: 200,
+      title: "红烧牛肉面",
+      data: { videoType: "general", thesis: "面条做法", keyPoints: [] },
+    },
+  });
+
+  const disabled = await retrieveChatVideos({
+    settings: { memoryEnabled: false },
+    query: "RAG 的检索怎么做",
+  });
+  assert.deepEqual(disabled, []);
+
+  const videos = await retrieveChatVideos({
+    settings: { memoryEnabled: true },
+    query: "RAG 的检索怎么做",
+    excludeVideoId: "self",
+    limit: 2,
+  });
+  assert.equal(videos.length, 1);
+  assert.equal(videos[0].videoId, "rag1");
+  assert.equal(videos[0].title, "RAG 入门");
+  assert.deepEqual(videos[0].keyPoints, ["向量检索是第一步。", "重排提升精度。"]);
 });
